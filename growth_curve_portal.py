@@ -157,7 +157,7 @@ if uploaded_files:
     from PIL import Image
     # Export as PNG
     img_buf = io.BytesIO()
-    fig.write_image(img_buf, format="png", dpi=300)
+    fig.write_image(img_buf, format="png")
     st.download_button(
         label="📥 Download PNG",
         data=img_buf.getvalue(),
@@ -169,7 +169,7 @@ if uploaded_files:
     img_buf.seek(0)
     img = Image.open(img_buf)
     tiff_buf = io.BytesIO()
-    img.save(tiff_buf, format="TIFF", dpi=300)
+    img.save(tiff_buf, format="TIFF")
     st.download_button(
         label="📥 Download TIFF",
         data=tiff_buf.getvalue(),
