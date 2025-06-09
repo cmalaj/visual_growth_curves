@@ -98,7 +98,7 @@ if uploaded_files:
 
         fig.update_layout(
             xaxis_title="Time (minutes)",
-            yaxis_title="OD600",
+            yaxis_title="OD600 yo",
             legend_title="Well ID",
             margin=dict(l=50, r=50, t=50, b=50)
         )
