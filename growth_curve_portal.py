@@ -156,7 +156,7 @@ if uploaded_files:
     import io
     from PIL import Image
     # DPI setting
-    dpi = st.number_input("📐 Export DPI", min_value=72, max_value=600, value=300, step=10)
+    dpi = st.number_input("Export DPI", min_value=72, max_value=600, value=300, step=10)
     scale = dpi / 72
 
     # PNG export
@@ -223,3 +223,28 @@ if uploaded_files:
     plt.tight_layout()
     st.subheader("Plate Summary Heatmaps")
     st.pyplot(fig)
+
+    # DPI input for export
+    dpi = st.number_input("Heatmap Export DPI", min_value=72, max_value=600, value=300, step=10, key=f"dpi_heatmap_{plate}")
+
+    # Export as PNG
+    png_buf = io.BytesIO()
+    fig.savefig(png_buf, format="png", dpi=dpi, bbox_inches="tight")
+    st.download_button(
+        label="📥 Download Heatmap PNG",
+        data=png_buf.getvalue(),
+        file_name=f"{plate}_heatmap.png",
+        mime="image/png"
+    )
+
+    # Export as TIFF
+    png_buf.seek(0)
+    img = Image.open(png_buf)
+    tiff_buf = io.BytesIO()
+    img.save(tiff_buf, format="TIFF")
+    st.download_button(
+        label="📥 Download Heatmap TIFF",
+        data=tiff_buf.getvalue(),
+        file_name=f"{plate}_heatmap.tiff",
+        mime="image/tiff"
+    )
