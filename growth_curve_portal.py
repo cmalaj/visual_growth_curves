@@ -81,31 +81,26 @@ if uploaded_files:
     # Interactive line plots using Plotly
     for df in all_data:
         plate = df["Plate"].iloc[0]
-        st.subheader(f"{plate} - Time Series (Interactive)")
+        st.subheader(f"{plate} - Time Series")
 
-        # Axis range override options
-        with st.expander(f"🔧 Adjust axis ranges for {plate}"):
-            col1, col2 = st.columns(2)
-            with col1:
-                x_min = st.number_input(f"{plate} X min (minutes)", value=float(df.index.min()), step=1.0, key=f"{plate}_xmin")
-                x_max = st.number_input(f"{plate} X max (minutes)", value=float(df.index.max()), step=1.0, key=f"{plate}_xmax")
-            with col2:
-                y_min = st.number_input(f"{plate} Y min (OD600)", value=float(df.drop(columns='Plate', errors='ignore').min().min()), step=0.1, key=f"{plate}_ymin")
-                y_max = st.number_input(f"{plate} Y max (OD600)", value=float(df.drop(columns='Plate', errors='ignore').max().max()), step=0.1, key=f"{plate}_ymax")
-
-        # Time-series plotting
         fig = go.Figure()
+
         for col in df.columns:
             if col not in ["Plate"] and not col.startswith("T°"):
-                fig.add_trace(go.Scatter(x=df.index, y=df[col], name=col, mode='lines'))
+                colour = well_colours.get(col, "#CCCCCC")  # fallback grey
+                fig.add_trace(go.Scatter(
+                    x=df.index,
+                    y=df[col],
+                    name=col,
+                    mode='lines',
+                    line=dict(color=colour)
+                ))
 
         fig.update_layout(
             xaxis_title="Time (minutes)",
             yaxis_title="OD600",
             legend_title="Well ID",
-            margin=dict(l=50, r=50, t=50, b=50),
-            xaxis=dict(range=[x_min, x_max]),
-            yaxis=dict(range=[y_min, y_max])
+            margin=dict(l=50, r=50, t=50, b=50)
         )
 
         st.plotly_chart(fig, use_container_width=True)
