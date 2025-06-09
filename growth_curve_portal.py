@@ -152,6 +152,28 @@ if uploaded_files:
 
         st.plotly_chart(fig, use_container_width=True)
 
+    # Export as PNG
+    import io
+    import plotly.io as pio
+    img_buf = io.BytesIO()
+    fig.write_image(img_buf, format="png")
+    st.download_button(
+        label="📥 Download PNG",
+        data=img_buf.getvalue(),
+        file_name=f"{plate}_timeseries.png",
+        mime="image/png"
+    )
+
+    # Export as TIFF
+    tiff_buf = io.BytesIO()
+    fig.write_image(tiff_buf, format="tiff")
+    st.download_button(
+        label="📥 Download TIFF",
+        data=tiff_buf.getvalue(),
+        file_name=f"{plate}_timeseries.tiff",
+        mime="image/tiff"
+    )
+
     # Generalised Heatmap Visualisation for "Mean" and "SD"
     metrics = ["Mean", "SD"]
     fig, axes = plt.subplots(len(metrics), len(all_summary), figsize=(5 * len(all_summary), 5 * len(metrics)))
