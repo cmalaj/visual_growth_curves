@@ -14,7 +14,7 @@ import re
 import copy
 
 st.set_page_config(layout="wide")
-st.title("Growth Curve Visualisation Portal (Growth Time-Series + Heatmap)")
+st.title("Growth Curve Visualisation Portal")
 
 
 # Generate 96 distinct colours from the rainbow colormap
@@ -152,11 +152,40 @@ if uploaded_files:
 
         st.plotly_chart(fig, use_container_width=True)
 
+    # Export time-series plot per plate
+    import io
+    from PIL import Image
+
+    dpi_ts = st.number_input("📐 Time-Series Export DPI", min_value=72, max_value=600, value=300, step=10, key=f"dpi_ts_{plate}")
+    scale_ts = dpi_ts / 72
+
+    ts_png_buf = io.BytesIO()
+    fig.write_image(ts_png_buf, format="png", scale=scale_ts)
+    st.download_button(
+        label="📥 Download PNG",
+        data=ts_png_buf.getvalue(),
+        file_name=f"{plate}_timeseries.png",
+        mime="image/png",
+        key=f"ts_png_{plate}"
+    )
+
+    ts_png_buf.seek(0)
+    ts_img = Image.open(ts_png_buf)
+    ts_tiff_buf = io.BytesIO()
+    ts_img.save(ts_tiff_buf, format="TIFF")
+    st.download_button(
+        label="📥 Download TIFF",
+        data=ts_tiff_buf.getvalue(),
+        file_name=f"{plate}_timeseries.tiff",
+        mime="image/tiff",
+        key=f"ts_tiff_{plate}"
+    )
+
     # Export as PNG
     import io
     from PIL import Image
     # DPI setting
-    dpi = st.number_input("Export DPI", min_value=72, max_value=600, value=300, step=10)
+    dpi = st.number_input("Time-Series Export DPI", min_value=72, max_value=600, value=300, step=10)
     scale = dpi / 72
 
     # PNG export
@@ -223,6 +252,30 @@ if uploaded_files:
     plt.tight_layout()
     st.subheader("Plate Summary Heatmaps")
     st.pyplot(fig)
+
+    # Export heatmap plot per plate
+    dpi_hm = st.number_input("📐 Heatmap Export DPI", min_value=72, max_value=600, value=300, step=10, key=f"dpi_hm_{plate}")
+    hm_png_buf = io.BytesIO()
+    fig.savefig(hm_png_buf, format="png", dpi=dpi_hm, bbox_inches="tight")
+    st.download_button(
+        label="📥 Download Heatmap PNG",
+        data=hm_png_buf.getvalue(),
+        file_name=f"{plate}_heatmap.png",
+        mime="image/png",
+        key=f"hm_png_{plate}"
+    )
+
+    hm_png_buf.seek(0)
+    hm_img = Image.open(hm_png_buf)
+    hm_tiff_buf = io.BytesIO()
+    hm_img.save(hm_tiff_buf, format="TIFF")
+    st.download_button(
+        label="📥 Download Heatmap TIFF",
+        data=hm_tiff_buf.getvalue(),
+        file_name=f"{plate}_heatmap.tiff",
+        mime="image/tiff",
+        key=f"hm_tiff_{plate}"
+    )
 
     # DPI input for export
     dpi = st.number_input("Heatmap Export DPI", min_value=72, max_value=600, value=300, step=10, key=f"dpi_heatmap_{plate}")
