@@ -6,13 +6,28 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import seaborn as sns
 import matplotlib.pyplot as plt
-import matplotlib
+import matplotlib.colors as mcolors
+import matplotlib.cm as cm
+from matplotlib.colors import LinearSegmentedColormap
 from io import StringIO
 import re
 import copy
 
 st.set_page_config(layout="wide")
 st.title("Growth Curve Visualisation Portal (Interactive + Heatmaps)")
+
+
+# Custom colormaps per row group
+custom_colormaps = {
+    "A": LinearSegmentedColormap.from_list("reds_custom", ["#8B0000", "#FFA07A"]),        # Dark red to light red
+    "B": LinearSegmentedColormap.from_list("oranges_custom", ["#FF8C00", "#FFE4B5"]),     # Dark orange to light
+    "C": LinearSegmentedColormap.from_list("yellows_custom", ["#CCCC00", "#FFFFE0"]),     # Mustard to pale yellow
+    "D": LinearSegmentedColormap.from_list("greens_custom", ["#006400", "#98FB98"]),      # Forest green to mint
+    "E": LinearSegmentedColormap.from_list("teals_custom", ["#008080", "#AFEEEE"]),       # Teal to pale turquoise
+    "F": LinearSegmentedColormap.from_list("blues_custom", ["#00008B", "#ADD8E6"]),       # Navy to light blue
+    "G": LinearSegmentedColormap.from_list("indigos_custom", ["#4B0082", "#D8BFD8"]),     # Indigo to thistle
+    "H": LinearSegmentedColormap.from_list("violets_custom", ["#800080", "#E6E6FA"]),     # Purple to lavender
+}
 
 uploaded_files = st.file_uploader("Upload up to 4 LogPhase600 .txt files", type="txt", accept_multiple_files=True)
 
@@ -73,29 +88,40 @@ if uploaded_files:
     # Interactive line plots using Plotly
     for df in all_data:
         plate = df["Plate"].iloc[0]
-        st.subheader(f"{plate} - Time Series (Interactive)")
+        st.subheader(f"{plate} - Time Series (Coloured by Row ID)")
 
         fig = go.Figure()
+
         for col in df.columns:
             if col not in ["Plate"] and not col.startswith("T°"):
-                fig.add_trace(go.Scatter(x=df.index, y=df[col], name=col, mode='lines'))
+                match = re.match(r"([A-H])(\d{1,2})", col)
+                if match:
+                    row_letter, col_num = match.groups()
+                    col_num = int(col_num)
 
-        # Axis range override options (optional)
-        with st.expander(f"🔧 Customise axes for {plate}"):
-            col1, col2 = st.columns(2)
-            with col1:
-                x_min = st.number_input(f"{plate} X min (minutes)", value=float(df.index.min()), step=1.0, key=f"{plate}_xmin")
-                x_max = st.number_input(f"{plate} X max (minutes)", value=float(df.index.max()), step=1.0, key=f"{plate}_xmax")
-            with col2:
-                y_min = st.number_input(f"{plate} Y min (OD600)", value=float(df.drop(columns='Plate', errors='ignore').min().min()), step=0.1, key=f"{plate}_ymin")
-                y_max = st.number_input(f"{plate} Y max (OD600)", value=float(df.drop(columns='Plate', errors='ignore').max().max()), step=0.1, key=f"{plate}_ymax")
+                    # Get appropriate custom colormap
+                    base_cmap = custom_colormaps.get(row_letter)
+                    if base_cmap:
+                        norm = mcolors.Normalize(vmin=1, vmax=12)
+                        rgba = base_cmap(norm(col_num))
+                        hex_colour = mcolors.to_hex(rgba)
+                    else:
+                        hex_colour = "#CCCCCC"  # fallback grey
+                else:
+                    hex_colour = "#CCCCCC"
+
+                fig.add_trace(go.Scatter(
+                    x=df.index,
+                    y=df[col],
+                    name=col,
+                    mode='lines',
+                    line=dict(color=hex_colour)
+                ))
 
         fig.update_layout(
             xaxis_title="Time (minutes)",
             yaxis_title="OD600",
             legend_title="Well ID",
-            xaxis=dict(range=[x_min, x_max]),
-            yaxis=dict(range=[y_min, y_max]),
             margin=dict(l=50, r=50, t=50, b=50)
         )
 
