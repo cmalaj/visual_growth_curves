@@ -21,10 +21,10 @@ def time_to_minutes(t):
     return h * 60 + m + s / 60
 
 def parse_growth_file(file, plate_num):
-    content = file.getvalue().decode('ISO-8859-1')
+    content = file.getvalue().decode("ISO-8859-1")
     lines = content.splitlines()
 
-    header_line = next(i for i, line in enumerate(lines) if line.strip().startswith('Time'))
+    header_line = next(i for i, line in enumerate(lines) if line.strip().startswith("Time"))
     headers = lines[header_line].split("\t")
 
     data_rows = []
@@ -34,7 +34,6 @@ def parse_growth_file(file, plate_num):
         cols = row.split("\t")
         if len(cols) != len(headers):
             continue
-        # Skip rows that are mostly empty
         if sum([1 for v in cols[1:] if v.strip()]) < 5:
             continue
         data_rows.append(cols)
@@ -53,23 +52,12 @@ if uploaded_files:
 
     for i, file in enumerate(uploaded_files):
         df = parse_growth_file(file, i + 1)
-        
+
         if df.empty:
             st.warning(f"⚠️ The file **{file.name}** could not be processed (empty or invalid data). Skipping.")
             continue
 
         all_data.append(df)
-
-        numeric_cols = df.columns.drop(["Plate"], errors="ignore")
-        numeric_cols = [col for col in numeric_cols if not col.startswith("T°")]
-
-        summary = pd.DataFrame({
-            "Well": numeric_cols,
-            "Mean": df[numeric_cols].mean(),
-            "SD": df[numeric_cols].std()
-        }).reset_index(drop=True)
-        summary["Plate"] = df["Plate"].iloc[0]
-        all_summary.append(summary)
 
         numeric_cols = df.columns.drop(["Plate"], errors="ignore")
         numeric_cols = [col for col in numeric_cols if not col.startswith("T°")]
@@ -89,26 +77,48 @@ if uploaded_files:
         fig = go.Figure()
         for col in df.columns:
             if col not in ["Plate"] and not col.startswith("T°"):
-                fig.add_trace(go.Scatter(x=df.index, y=df[col], mode='lines', name=col))
-        fig.update_layout(xaxis_title="Time (min)", yaxis_title="OD600", height=500, showlegend=False)
-        fig_copy = copy.deepcopy(fig)
-        st.plotly_chart(fig_copy, use_container_width=True, key=f"plot_{plate}")
+                fig.add_trace(go.Scatter(x=df.index, y=df[col], name=col, mode='lines'))
+        st.plotly_chart(fig, use_container_width=True)
 
-    # Heatmaps of Mean and SD using matplotlib
-    st.subheader("Well Summary Heatmaps (Mean and SD)")
-    fig, axes = plt.subplots(2, len(all_summary), figsize=(5 * len(all_summary), 10))
+    # Generalised Heatmap Visualisation for "Mean" and "SD"
+    metrics = ["Mean", "SD"]
+    fig, axes = plt.subplots(len(metrics), len(all_summary), figsize=(5 * len(all_summary), 5 * len(metrics)))
+
     if len(all_summary) == 1:
-        axes = np.array([[axes[0]], [axes[1]]])
-    for i, summary in enumerate(all_summary):
-        for j, metric in enumerate(["Mean", "SD"]):
+        axes = np.array([[axes[0]], [axes[1]]])  # Ensure 2D shape
+
+    for j, metric in enumerate(metrics):
+        for i, summary in enumerate(all_summary):
+            plate = summary["Plate"].iloc[0]
             sub = summary[["Well", metric]]
-            heatmap = pd.DataFrame(index=list("ABCDEFGH"), columns=range(1, 13), dtype=float)
+
+            # Dynamically extract row and column layout from wells
+            well_ids = sub["Well"].dropna().unique()
+            rows = sorted(set([w[0] for w in well_ids if re.match(r"^[A-Z]\d+$", w)]))
+            cols = sorted(set([int(re.search(r"\d+$", w).group()) for w in well_ids if re.match(r"^[A-Z]\d+$", w)]))
+
+            heatmap = pd.DataFrame(index=rows, columns=cols, dtype=float)
+
             for _, row in sub.iterrows():
-                match = re.match(r"([A-H])([1-9]|1[0-2])", row["Well"])
+                match = re.match(r"([A-Z])(\d{1,2})", row["Well"])
                 if match:
                     r, c = match.groups()
-                    heatmap.loc[r, int(c)] = row[metric]
+                    if r in heatmap.index and int(c) in heatmap.columns:
+                        heatmap.loc[r, int(c)] = row[metric]
+
             heatmap.columns = heatmap.columns.astype(int)
-            sns.heatmap(heatmap, ax=axes[j][i], cmap="rainbow", annot=False, fmt=".2f", cbar=True)
-            axes[j][i].set_title(f"{summary['Plate'].iloc[0]} - {metric}")
+
+            sns.heatmap(
+                heatmap,
+                ax=axes[j][i],
+                cmap="rainbow_r",
+                annot=False,
+                cbar=True
+            )
+            axes[j][i].set_title(f"{plate} - {metric}")
+            axes[j][i].set_xlabel("Column")
+            axes[j][i].set_ylabel("Row")
+
+    plt.tight_layout()
+    st.subheader("Plate Summary Heatmaps")
     st.pyplot(fig)
