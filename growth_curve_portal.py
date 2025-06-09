@@ -14,7 +14,7 @@ import re
 import copy
 
 st.set_page_config(layout="wide")
-st.title("Growth Curve Visualisation Portal")
+st.title("Growth Curve Visualisation Portal v. 1.0")
 
 
 # Generate 96 distinct colours from the rainbow colormap
