@@ -111,7 +111,7 @@ if uploaded_files:
         st.subheader(f"{plate} - Time Series")
 
         # Axis range override UI
-        with st.expander(f"🔧 Adjust axis ranges for {plate}"):
+        with st.expander(f"Adjust axis ranges for {plate}"):
             col1, col2 = st.columns(2)
             with col1:
                 x_min = st.number_input(f"{plate} X min (minutes)", value=float(df.index.min()), step=1.0, key=f"{plate}_xmin")
