@@ -3,5 +3,4 @@ pandas
 matplotlib
 seaborn
 plotly
-kaleido
-Pillow
+
