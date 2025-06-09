@@ -77,13 +77,13 @@ if uploaded_files:
         fig = go.Figure()
         for col in df.columns:
             if col not in ["Plate"] and not col.startswith("T°"):
-                fig.add_trace(go.Scatter(x=df.index, y=df[col], name=col, mode='lines'))
+                fig.add_trace(go.Scatter(x=df.index, y=df[col], name=col, mode='lines', showlegend=False))
 
         # Add axis labels
         fig.update_layout(
             xaxis_title="Time (minutes)",
             yaxis_title="OD600",
-            legend_title="Well ID",
+            #legend_title="Well ID",
             margin=dict(l=50, r=50, t=50, b=50)
         )
 
