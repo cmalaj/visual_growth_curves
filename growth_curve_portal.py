@@ -14,7 +14,8 @@ import re
 import copy
 
 st.set_page_config(layout="wide")
-st.title("Growth Curve Visualisation Portal (Growth Time-Series  + Heatmap)")
+st.title("Growth Curve Visualisation Portal \n(Growth Time-Series  + Heatmap)")
+st.subheader("Chris is great.")
 
 
 # Generate 96 distinct colours from the rainbow colormap
@@ -80,7 +81,7 @@ if uploaded_files:
 
     # Add well selection filters
     # Sidebar: Time-series well selection controls
-    st.sidebar.header("Plot Controls")
+    st.sidebar.header("Time-Series Controls")
 
     # Define full row/col lists
     all_rows = list("ABCDEFGH")
@@ -99,7 +100,7 @@ if uploaded_files:
     st.sidebar.subheader("Columns")
     col_col1, col_col2 = st.sidebar.columns([1, 2])
     with col_col1:
-        if st.button("Select all cols"):
+        if st.button("Select all columns"):
             selected_cols = all_cols
         else:
             selected_cols = st.sidebar.multiselect("Choose columns (1–12):", all_cols, default=all_cols, key="col_select")  
