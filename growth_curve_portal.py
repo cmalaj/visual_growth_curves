@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 from io import StringIO
 import re
+import copy
 
 st.set_page_config(layout="wide")
 st.title("Growth Curve Visualisation Portal (Interactive + Heatmaps)")
@@ -90,7 +91,8 @@ if uploaded_files:
             if col not in ["Plate"] and not col.startswith("T°"):
                 fig.add_trace(go.Scatter(x=df.index, y=df[col], mode='lines', name=col))
         fig.update_layout(xaxis_title="Time (min)", yaxis_title="OD600", height=500)
-        st.plotly_chart(fig, use_container_width=True)
+        fig_copy = copy.deepcopy(fig)
+        st.plotly_chart(fig_copy, use_container_width=True)
 
     # Heatmaps of Mean and SD using matplotlib
     st.subheader("Well Summary Heatmaps (Mean and SD)")
