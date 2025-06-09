@@ -108,6 +108,6 @@ if uploaded_files:
                 if match:
                     r, c = match.groups()
                     heatmap.loc[r, int(c)] = row[metric]
-            sns.heatmap(heatmap, ax=axes[j][i], cmap="viridis", annot=False, fmt=".2f", cbar=True)
+            sns.heatmap(heatmap, ax=axes[j][i], cmap="rainbow_r", annot=False, fmt=".2f", cbar=True)
             axes[j][i].set_title(f"{summary['Plate'].iloc[0]} - {metric}")
     st.pyplot(fig)
