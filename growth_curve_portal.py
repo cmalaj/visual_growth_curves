@@ -78,6 +78,12 @@ if uploaded_files:
         summary["Plate"] = f"Plate {i + 1}"
         all_summary.append(summary)
 
+    # Add well selection filters
+    st.sidebar.header("🧪 Plot Controls")
+    selected_rows = st.sidebar.multiselect("Select rows (A–H):", list("ABCDEFGH"), default=list("ABCDEFGH"))
+    selected_cols = st.sidebar.multiselect("Select columns (1–12):", list(range(1, 13)), default=list(range(1, 13)))    
+    
+    
     # Interactive line plots using Plotly
     for df in all_data:
         plate = df["Plate"].iloc[0]
@@ -98,6 +104,13 @@ if uploaded_files:
 
         for col in df.columns:
             if col not in ["Plate"] and not col.startswith("T°"):
+                match = re.match(r"([A-H])(\d{1,2})", col)
+                if not match:
+                    continue
+                row, col_num = match.groups()
+                col_num = int(col_num)
+                if row not in selected_rows or col_num not in selected_cols:
+                    continue
                 colour = well_colours.get(col, "#CCCCCC")  # fallback grey
                 fig.add_trace(go.Scatter(
                     x=df.index,
