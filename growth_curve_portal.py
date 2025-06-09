@@ -152,6 +152,32 @@ if uploaded_files:
 
         st.plotly_chart(fig, use_container_width=True)
 
+    # Export time-series plot immediately after plotting
+    import io
+    from PIL import Image
+    dpi_ts = st.number_input("📐 Time-Series Export DPI", min_value=72, max_value=600, value=300, step=10, key=f"dpi_ts_{plate}_{idx}")
+    scale_ts = dpi_ts / 72
+    ts_png_buf = io.BytesIO()
+    fig.write_image(ts_png_buf, format="png", scale=scale_ts)
+    st.download_button(
+        label="📥 Download Time-Series PNG",
+        data=ts_png_buf.getvalue(),
+        file_name=f"{plate}_timeseries.png",
+        mime="image/png",
+        key=f"ts_png_{plate}_{idx}"
+    )
+    ts_png_buf.seek(0)
+    ts_img = Image.open(ts_png_buf)
+    ts_tiff_buf = io.BytesIO()
+    ts_img.save(ts_tiff_buf, format="TIFF")
+    st.download_button(
+        label="📥 Download Time-Series TIFF",
+        data=ts_tiff_buf.getvalue(),
+        file_name=f"{plate}_timeseries.tiff",
+        mime="image/tiff",
+        key=f"ts_tiff_{plate}_{idx}"
+    )
+
     # Export as PNG
     import io
     from PIL import Image
@@ -163,7 +189,7 @@ if uploaded_files:
     img_buf = io.BytesIO()
     fig.write_image(img_buf, format="png", scale=scale)
     st.download_button(
-        label="📥 PNG",
+        label="📥 Download PNG",
         data=img_buf.getvalue(),
         file_name=f"{plate}_timeseries.png",
         mime="image/png"
@@ -175,7 +201,7 @@ if uploaded_files:
     tiff_buf = io.BytesIO()
     img.save(tiff_buf, format="TIFF")
     st.download_button(
-        label="📥 TIFF",
+        label="📥 Download TIFF",
         data=tiff_buf.getvalue(),
         file_name=f"{plate}_timeseries.tiff",
         mime="image/tiff"
@@ -224,6 +250,29 @@ if uploaded_files:
     st.subheader("Plate Summary Heatmaps")
     st.pyplot(fig)
 
+    # Export heatmap plot immediately after plotting
+    dpi_hm = st.number_input("📐 Heatmap Export DPI", min_value=72, max_value=600, value=300, step=10, key=f"dpi_hm_{plate}_{idx}")
+    hm_png_buf = io.BytesIO()
+    fig.savefig(hm_png_buf, format="png", dpi=dpi_hm, bbox_inches="tight")
+    st.download_button(
+        label="📥 Download Heatmap PNG",
+        data=hm_png_buf.getvalue(),
+        file_name=f"{plate}_heatmap.png",
+        mime="image/png",
+        key=f"hm_png_{plate}_{idx}"
+    )
+    hm_png_buf.seek(0)
+    hm_img = Image.open(hm_png_buf)
+    hm_tiff_buf = io.BytesIO()
+    hm_img.save(hm_tiff_buf, format="TIFF")
+    st.download_button(
+        label="📥 Download Heatmap TIFF",
+        data=hm_tiff_buf.getvalue(),
+        file_name=f"{plate}_heatmap.tiff",
+        mime="image/tiff",
+        key=f"hm_tiff_{plate}_{idx}"
+    )
+
     # DPI input for export
     dpi = st.number_input("Heatmap Export DPI", min_value=72, max_value=600, value=300, step=10, key=f"dpi_heatmap_{plate}")
 
@@ -231,7 +280,7 @@ if uploaded_files:
     png_buf = io.BytesIO()
     fig.savefig(png_buf, format="png", dpi=dpi, bbox_inches="tight")
     st.download_button(
-        label="📥 PNG",
+        label="📥 Download Heatmap PNG",
         data=png_buf.getvalue(),
         file_name=f"{plate}_heatmap.png",
         mime="image/png"
@@ -243,7 +292,7 @@ if uploaded_files:
     tiff_buf = io.BytesIO()
     img.save(tiff_buf, format="TIFF")
     st.download_button(
-        label="📥 TIFF",
+        label="📥 Download Heatmap TIFF",
         data=tiff_buf.getvalue(),
         file_name=f"{plate}_heatmap.tiff",
         mime="image/tiff"
