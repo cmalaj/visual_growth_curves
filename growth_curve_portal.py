@@ -79,9 +79,34 @@ if uploaded_files:
         all_summary.append(summary)
 
     # Add well selection filters
-    st.sidebar.header("🧪 Plot Controls")
-    selected_rows = st.sidebar.multiselect("Select rows (A–H):", list("ABCDEFGH"), default=list("ABCDEFGH"))
-    selected_cols = st.sidebar.multiselect("Select columns (1–12):", list(range(1, 13)), default=list(range(1, 13)))    
+    # Sidebar: Time-series well selection controls
+    st.sidebar.header("Plot Controls")
+
+    # Define full row/col lists
+    all_rows = list("ABCDEFGH")
+    all_cols = list(range(1, 13))
+
+    # Add row toggle buttons
+    st.sidebar.subheader("Rows")
+    row_col1, row_col2 = st.sidebar.columns([1, 2])
+    with row_col1:
+        if st.button("Select all rows"):
+            selected_rows = all_rows
+        elif st.button("Select none"):
+            selected_rows = []
+        else:
+            selected_rows = st.sidebar.multiselect("Choose rows (A–H):", all_rows, default=all_rows, key="row_select")
+
+    # Add column toggle buttons
+    st.sidebar.subheader("Columns")
+    col_col1, col_col2 = st.sidebar.columns([1, 2])
+    with col_col1:
+        if st.button("Select all cols"):
+            selected_cols = all_cols
+        elif st.button("Select none cols"):
+            selected_cols = []
+        else:
+            selected_cols = st.sidebar.multiselect("Choose columns (1–12):", all_cols, default=all_cols, key="col_select")  
     
     
     # Interactive line plots using Plotly
