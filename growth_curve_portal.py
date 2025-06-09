@@ -14,8 +14,7 @@ import re
 import copy
 
 st.set_page_config(layout="wide")
-st.title("Growth Curve Visualisation Portal \n(Growth Time-Series  + Heatmap)")
-st.subheader("Chris is great.")
+st.title("Growth Curve Visualisation Portal (Growth Time-Series + Heatmap)")
 
 
 # Generate 96 distinct colours from the rainbow colormap
