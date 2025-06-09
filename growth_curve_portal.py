@@ -154,9 +154,10 @@ if uploaded_files:
 
     # Export as PNG
     import io
-    import plotly.io as pio
+    from PIL import Image
+    # Export as PNG
     img_buf = io.BytesIO()
-    fig.write_image(img_buf, format="png")
+    fig.write_image(img_buf, format="png", dpi=300)
     st.download_button(
         label="📥 Download PNG",
         data=img_buf.getvalue(),
@@ -164,9 +165,11 @@ if uploaded_files:
         mime="image/png"
     )
 
-    # Export as TIFF
+    # Export as TIFF (convert from PNG)
+    img_buf.seek(0)
+    img = Image.open(img_buf)
     tiff_buf = io.BytesIO()
-    fig.write_image(tiff_buf, format="tiff")
+    img.save(tiff_buf, format="TIFF", dpi=300)
     st.download_button(
         label="📥 Download TIFF",
         data=tiff_buf.getvalue(),
