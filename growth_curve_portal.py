@@ -113,15 +113,14 @@ if uploaded_files:
             plate = summary["Plate"].iloc[0]
             sub = summary[["Well", metric]]
 
-            # Dynamically extract row and column layout from wells
+            # Dynamically extract layout
             well_ids = sub["Well"].dropna().unique()
-            rows = sorted(set([w[0] for w in well_ids if re.match(r"^[A-Z]\d+$", w)]))
-            cols = sorted(set([int(re.search(r"\d+$", w).group()) for w in well_ids if re.match(r"^[A-Z]\d+$", w)]))
-
+            rows = sorted(set([w[0] for w in well_ids if re.match(r"^[A-Z]\\d+$", w)]))
+            cols = sorted(set([int(re.search(r"\\d+$", w).group()) for w in well_ids if re.match(r"^[A-Z]\\d+$", w)]))
             heatmap = pd.DataFrame(index=rows, columns=cols, dtype=float)
 
             for _, row in sub.iterrows():
-                match = re.match(r"([A-Z])(\d{1,2})", row["Well"])
+                match = re.match(r"([A-Z])(\\d{1,2})", row["Well"])
                 if match:
                     r, c = match.groups()
                     if r in heatmap.index and int(c) in heatmap.columns:
@@ -129,12 +128,19 @@ if uploaded_files:
 
             heatmap.columns = heatmap.columns.astype(int)
 
+            # Dynamic colour scale control
+            with st.expander(f"🎨 Colour scale options for {plate} - {metric}"):
+                cmin = st.number_input(f"{plate} - {metric} vmin", value=float(np.nanmin(heatmap.values)), step=0.1, key=f"{plate}_{metric}_vmin")
+                cmax = st.number_input(f"{plate} - {metric} vmax", value=float(np.nanmax(heatmap.values)), step=0.1, key=f"{plate}_{metric}_vmax")
+
             sns.heatmap(
                 heatmap,
                 ax=axes[j][i],
                 cmap="rainbow_r",
                 annot=False,
-                cbar=True
+                cbar=True,
+                vmin=cmin,
+                vmax=cmax
             )
             axes[j][i].set_title(f"{plate} - {metric}")
             axes[j][i].set_xlabel("Column")
