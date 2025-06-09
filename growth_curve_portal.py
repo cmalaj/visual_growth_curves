@@ -18,7 +18,7 @@ st.title("Growth Curve Visualisation Portal (Interactive + Heatmaps)")
 
 
 # Generate 96 distinct colours from the rainbow colormap
-rainbow_cmap = cm.get_cmap("rainbow", 96)
+rainbow_cmap = cm.get_cmap("gist_rainbow", 96)
 well_order = [f"{row}{col}" for row in "ABCDEFGH" for col in range(1, 13)]
 well_colours = {well: mcolors.to_hex(rainbow_cmap(i)) for i, well in enumerate(well_order)}
 
