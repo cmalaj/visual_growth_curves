@@ -54,7 +54,7 @@ if uploaded_files:
         df = parse_growth_file(file, i + 1)
 
         if df.empty:
-            st.warning(f"⚠️ The file **{file.name}** could not be processed (empty or invalid data). Skipping.")
+            st.warning(f"The file **{file.name}** could not be processed (empty or invalid data). Skipping.")
             continue
 
         all_data.append(df)
@@ -78,6 +78,15 @@ if uploaded_files:
         for col in df.columns:
             if col not in ["Plate"] and not col.startswith("T°"):
                 fig.add_trace(go.Scatter(x=df.index, y=df[col], name=col, mode='lines'))
+
+        # Add axis labels
+        fig.update_layout(
+            xaxis_title="Time (minutes)",
+            yaxis_title="OD600",
+            legend_title="Well ID",
+            margin=dict(l=50, r=50, t=50, b=50)
+        )
+
         st.plotly_chart(fig, use_container_width=True)
 
     # Generalised Heatmap Visualisation for "Mean" and "SD"
