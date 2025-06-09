@@ -90,7 +90,7 @@ if uploaded_files:
         for col in df.columns:
             if col not in ["Plate"] and not col.startswith("T°"):
                 fig.add_trace(go.Scatter(x=df.index, y=df[col], mode='lines', name=col))
-        fig.update_layout(xaxis_title="Time (min)", yaxis_title="OD600", height=500)
+        fig.update_layout(xaxis_title="Time (min)", yaxis_title="OD600", height=500, showlegend=False)
         fig_copy = copy.deepcopy(fig)
         st.plotly_chart(fig_copy, use_container_width=True, key=f"plot_{plate}")
 
@@ -108,6 +108,6 @@ if uploaded_files:
                 if match:
                     r, c = match.groups()
                     heatmap.loc[r, int(c)] = row[metric]
-            sns.heatmap(heatmap, ax=axes[j][i], cmap="rainbow_r", annot=False, fmt=".2f", cbar=True)
+            sns.heatmap(heatmap, ax=axes[j][i], cmap="rainbow", annot=False, fmt=".2f", cbar=True)
             axes[j][i].set_title(f"{summary['Plate'].iloc[0]} - {metric}")
     st.pyplot(fig)
