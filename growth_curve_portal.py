@@ -1,45 +1,89 @@
-# growth_curve_portal.py
 
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
+import numpy as np
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import seaborn as sns
-import re
+import matplotlib.pyplot as plt
+import matplotlib
 from io import StringIO
+import re
 
-st.title("Growth Curve Visualisation Portal")
+st.set_page_config(layout="wide")
+st.title("Growth Curve Visualisation Portal (Interactive + Heatmaps)")
 
-uploaded_files = st.file_uploader("Upload LogPhase600 .txt files", type="txt", accept_multiple_files=True)
+uploaded_files = st.file_uploader("Upload up to 4 LogPhase600 .txt files", type="txt", accept_multiple_files=True)
 
-def parse_growth_file(file):
+def time_to_minutes(t):
+    h, m, s = map(int, t.split(":"))
+    return h * 60 + m + s / 60
+
+def parse_growth_file(file, plate_num):
     content = file.getvalue().decode('ISO-8859-1')
     lines = content.splitlines()
 
-    # Find header
-    header_idx = next(i for i, line in enumerate(lines) if line.strip().startswith("Time"))
-    headers = lines[header_idx].split("\t")
+    header_line = next(i for i, line in enumerate(lines) if line.strip().startswith('Time'))
+    headers = lines[header_line].split("\t")
 
-    # Parse data rows
     data_rows = [
-        row.split("\t") for row in lines[header_idx + 1:]
+        row.split("\t") for row in lines[header_line + 1:]
         if re.match(r'^\d+:\d+:\d+', row)
         and len(row.split("\t")) == len(headers)
     ]
 
     df = pd.DataFrame(data_rows, columns=headers)
-    df["Time"] = df["Time"].apply(lambda t: sum(int(x) * 60**i for i, x in enumerate(reversed(t.split(":")))))
+    df["Time"] = df["Time"].apply(time_to_minutes)
     for col in df.columns:
         if col != "Time":
             df[col] = pd.to_numeric(df[col], errors="coerce")
+    df["Plate"] = f"Plate {plate_num}"
     return df.set_index("Time")
 
 if uploaded_files:
-    for file in uploaded_files:
-        df = parse_growth_file(file)
-        st.subheader(f"Plot for: {file.name}")
-        fig, ax = plt.subplots(figsize=(12, 6))
-        sns.lineplot(data=df.drop(columns=[col for col in df.columns if "T°" in col or col.startswith("T°")]), ax=ax)
-        ax.set_title("OD600 over Time")
-        ax.set_ylabel("OD600")
-        ax.set_xlabel("Time (minutes)")
-        st.pyplot(fig)
+    all_data = []
+    all_summary = []
+
+    for i, file in enumerate(uploaded_files):
+        df = parse_growth_file(file, i + 1)
+        all_data.append(df)
+
+        numeric_cols = df.columns.drop(["Plate"], errors="ignore")
+        numeric_cols = [col for col in numeric_cols if not col.startswith("T°")]
+
+        summary = pd.DataFrame({
+            "Well": numeric_cols,
+            "Mean": df[numeric_cols].mean(),
+            "SD": df[numeric_cols].std()
+        }).reset_index(drop=True)
+        summary["Plate"] = f"Plate {i + 1}"
+        all_summary.append(summary)
+
+    # Interactive line plots using Plotly
+    for df in all_data:
+        plate = df["Plate"].iloc[0]
+        st.subheader(f"{plate} - Time Series (Interactive)")
+        fig = go.Figure()
+        for col in df.columns:
+            if col not in ["Plate"] and not col.startswith("T°"):
+                fig.add_trace(go.Scatter(x=df.index, y=df[col], mode='lines', name=col))
+        fig.update_layout(xaxis_title="Time (min)", yaxis_title="OD600", height=500)
+        st.plotly_chart(fig, use_container_width=True)
+
+    # Heatmaps of Mean and SD using matplotlib
+    st.subheader("Well Summary Heatmaps (Mean and SD)")
+    fig, axes = plt.subplots(2, len(all_summary), figsize=(5 * len(all_summary), 10))
+    if len(all_summary) == 1:
+        axes = np.array([[axes[0]], [axes[1]]])
+    for i, summary in enumerate(all_summary):
+        for j, metric in enumerate(["Mean", "SD"]):
+            sub = summary[["Well", metric]]
+            heatmap = pd.DataFrame(index=list("ABCDEFGH"), columns=range(1, 13), dtype=float)
+            for _, row in sub.iterrows():
+                match = re.match(r"([A-H])([1-9]|1[0-2])", row["Well"])
+                if match:
+                    r, c = match.groups()
+                    heatmap.loc[r, int(c)] = row[metric]
+            sns.heatmap(heatmap, ax=axes[j][i], cmap="viridis", annot=True, fmt=".2f", cbar=True)
+            axes[j][i].set_title(f"{summary['Plate'].iloc[0]} - {metric}")
+    st.pyplot(fig)
