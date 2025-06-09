@@ -155,9 +155,13 @@ if uploaded_files:
     # Export as PNG
     import io
     from PIL import Image
-    # Export as PNG
+    # DPI setting
+    dpi = st.number_input("📐 Export DPI", min_value=72, max_value=600, value=300, step=10)
+    scale = dpi / 72
+
+    # PNG export
     img_buf = io.BytesIO()
-    fig.write_image(img_buf, format="png")
+    fig.write_image(img_buf, format="png", scale=scale)
     st.download_button(
         label="📥 Download PNG",
         data=img_buf.getvalue(),
@@ -165,7 +169,7 @@ if uploaded_files:
         mime="image/png"
     )
 
-    # Export as TIFF (convert from PNG)
+    # TIFF export via Pillow
     img_buf.seek(0)
     img = Image.open(img_buf)
     tiff_buf = io.BytesIO()
