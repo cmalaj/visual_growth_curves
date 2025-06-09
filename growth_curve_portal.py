@@ -81,7 +81,7 @@ if uploaded_files:
     # Interactive line plots using Plotly
     for df in all_data:
         plate = df["Plate"].iloc[0]
-        st.subheader(f"{plate} - Time Series")
+        st.subheader(f"{plate} - Time Series YO!")
 
         fig = go.Figure()
 
@@ -98,7 +98,7 @@ if uploaded_files:
 
         fig.update_layout(
             xaxis_title="Time (minutes)",
-            yaxis_title="OD600 yo",
+            yaxis_title="OD600",
             legend_title="Well ID",
             margin=dict(l=50, r=50, t=50, b=50)
         )
