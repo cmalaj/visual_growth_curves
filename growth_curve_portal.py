@@ -52,7 +52,23 @@ if uploaded_files:
 
     for i, file in enumerate(uploaded_files):
         df = parse_growth_file(file, i + 1)
+        
+        if df.empty:
+            st.warning(f"⚠️ The file **{file.name}** could not be processed (empty or invalid data). Skipping.")
+            continue
+
         all_data.append(df)
+
+        numeric_cols = df.columns.drop(["Plate"], errors="ignore")
+        numeric_cols = [col for col in numeric_cols if not col.startswith("T°")]
+
+        summary = pd.DataFrame({
+            "Well": numeric_cols,
+            "Mean": df[numeric_cols].mean(),
+            "SD": df[numeric_cols].std()
+        }).reset_index(drop=True)
+        summary["Plate"] = df["Plate"].iloc[0]
+        all_summary.append(summary)
 
         numeric_cols = df.columns.drop(["Plate"], errors="ignore")
         numeric_cols = [col for col in numeric_cols if not col.startswith("T°")]
