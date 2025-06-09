@@ -17,17 +17,10 @@ st.set_page_config(layout="wide")
 st.title("Growth Curve Visualisation Portal (Interactive + Heatmaps)")
 
 
-# Custom colormaps per row group
-custom_colormaps = {
-    "A": LinearSegmentedColormap.from_list("reds_custom", ["#8B0000", "#FFA07A"]),        # Dark red to light red
-    "B": LinearSegmentedColormap.from_list("oranges_custom", ["#FF8C00", "#FFE4B5"]),     # Dark orange to light
-    "C": LinearSegmentedColormap.from_list("yellows_custom", ["#CCCC00", "#FFFFE0"]),     # Mustard to pale yellow
-    "D": LinearSegmentedColormap.from_list("greens_custom", ["#006400", "#98FB98"]),      # Forest green to mint
-    "E": LinearSegmentedColormap.from_list("teals_custom", ["#008080", "#AFEEEE"]),       # Teal to pale turquoise
-    "F": LinearSegmentedColormap.from_list("blues_custom", ["#00008B", "#ADD8E6"]),       # Navy to light blue
-    "G": LinearSegmentedColormap.from_list("indigos_custom", ["#4B0082", "#D8BFD8"]),     # Indigo to thistle
-    "H": LinearSegmentedColormap.from_list("violets_custom", ["#800080", "#E6E6FA"]),     # Purple to lavender
-}
+# Generate 96 distinct colours from the rainbow colormap
+rainbow_cmap = cm.get_cmap("rainbow", 96)
+well_order = [f"{row}{col}" for row in "ABCDEFGH" for col in range(1, 13)]
+well_colours = {well: mcolors.to_hex(rainbow_cmap(i)) for i, well in enumerate(well_order)}
 
 uploaded_files = st.file_uploader("Upload up to 4 LogPhase600 .txt files", type="txt", accept_multiple_files=True)
 
@@ -88,39 +81,24 @@ if uploaded_files:
     # Interactive line plots using Plotly
     for df in all_data:
         plate = df["Plate"].iloc[0]
-        st.subheader(f"{plate} - Time Series (Coloured by Row ID)")
+        st.subheader(f"{plate} - Time Series (96-Well Rainbow Colours)")
 
         fig = go.Figure()
 
         for col in df.columns:
             if col not in ["Plate"] and not col.startswith("T°"):
-                match = re.match(r"([A-H])(\d{1,2})", col)
-                if match:
-                    row_letter, col_num = match.groups()
-                    col_num = int(col_num)
-
-                    # Get appropriate custom colormap
-                    base_cmap = custom_colormaps.get(row_letter)
-                    if base_cmap:
-                        norm = mcolors.Normalize(vmin=1, vmax=12)
-                        rgba = base_cmap(norm(col_num))
-                        hex_colour = mcolors.to_hex(rgba)
-                    else:
-                        hex_colour = "#CCCCCC"  # fallback grey
-                else:
-                    hex_colour = "#CCCCCC"
-
+                colour = well_colours.get(col, "#CCCCCC")  # fallback grey
                 fig.add_trace(go.Scatter(
                     x=df.index,
                     y=df[col],
                     name=col,
                     mode='lines',
-                    line=dict(color=hex_colour)
+                    line=dict(color=colour)
                 ))
 
         fig.update_layout(
             xaxis_title="Time (minutes)",
-            yaxis_title="OD600 yo",
+            yaxis_title="OD600",
             legend_title="Well ID",
             margin=dict(l=50, r=50, t=50, b=50)
         )
