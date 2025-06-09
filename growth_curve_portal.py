@@ -6,13 +6,21 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import seaborn as sns
 import matplotlib.pyplot as plt
-import matplotlib
+import matplotlib.colors as mcolors
+import matplotlib.cm as cm
+from matplotlib.colors import LinearSegmentedColormap
 from io import StringIO
 import re
 import copy
 
 st.set_page_config(layout="wide")
 st.title("Growth Curve Visualisation Portal (Interactive + Heatmaps)")
+
+
+# Generate 96 distinct colours from the rainbow colormap
+rainbow_cmap = cm.get_cmap("gist_rainbow", 96)
+well_order = [f"{row}{col}" for row in "ABCDEFGH" for col in range(1, 13)]
+well_colours = {well: mcolors.to_hex(rainbow_cmap(i)) for i, well in enumerate(well_order)}
 
 uploaded_files = st.file_uploader("Upload up to 4 LogPhase600 .txt files", type="txt", accept_multiple_files=True)
 
@@ -54,7 +62,7 @@ if uploaded_files:
         df = parse_growth_file(file, i + 1)
 
         if df.empty:
-            st.warning(f"⚠️ The file **{file.name}** could not be processed (empty or invalid data). Skipping.")
+            st.warning(f"The file **{file.name}** could not be processed (empty or invalid data). Skipping.")
             continue
 
         all_data.append(df)
@@ -74,10 +82,32 @@ if uploaded_files:
     for df in all_data:
         plate = df["Plate"].iloc[0]
         st.subheader(f"{plate} - Time Series (Interactive)")
+
+        # Axis range override options
+        with st.expander(f"🔧 Adjust axis ranges for {plate}"):
+            col1, col2 = st.columns(2)
+            with col1:
+                x_min = st.number_input(f"{plate} X min (minutes)", value=float(df.index.min()), step=1.0, key=f"{plate}_xmin")
+                x_max = st.number_input(f"{plate} X max (minutes)", value=float(df.index.max()), step=1.0, key=f"{plate}_xmax")
+            with col2:
+                y_min = st.number_input(f"{plate} Y min (OD600)", value=float(df.drop(columns='Plate', errors='ignore').min().min()), step=0.1, key=f"{plate}_ymin")
+                y_max = st.number_input(f"{plate} Y max (OD600)", value=float(df.drop(columns='Plate', errors='ignore').max().max()), step=0.1, key=f"{plate}_ymax")
+
+        # Time-series plotting
         fig = go.Figure()
         for col in df.columns:
             if col not in ["Plate"] and not col.startswith("T°"):
                 fig.add_trace(go.Scatter(x=df.index, y=df[col], name=col, mode='lines'))
+
+        fig.update_layout(
+            xaxis_title="Time (minutes)",
+            yaxis_title="OD600",
+            legend_title="Well ID",
+            margin=dict(l=50, r=50, t=50, b=50),
+            xaxis=dict(range=[x_min, x_max]),
+            yaxis=dict(range=[y_min, y_max])
+        )
+
         st.plotly_chart(fig, use_container_width=True)
 
     # Generalised Heatmap Visualisation for "Mean" and "SD"
