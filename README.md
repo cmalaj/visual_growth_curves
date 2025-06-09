@@ -16,7 +16,7 @@ This web-based tool allows users to upload and visualise 96-well plate growth cu
 
 You can use the app directly at:
 
- [https://mfkpcsfphsy3leemfksxae.streamlit.app](https://mfkpcsfphsy3leemfksxae.streamlit.app)
+https://mfkpcsfphsy3leemfksxae.streamlit.app
 
 1. Upload one or more `.txt` files
 2. Review interactive time-series and heatmaps
@@ -25,8 +25,30 @@ You can use the app directly at:
 
 ### Run Locally
 
-```bash
-git clone https://github.com/cmalaj/visual_growth_curves.git
-cd visual_growth_curves
-pip install -r requirements.txt
-streamlit run growth_curve_portal.py
+    git clone https://github.com/cmalaj/visual_growth_curves.git
+    cd visual_growth_curves
+    pip install -r requirements.txt
+    streamlit run growth_curve_portal.py
+
+## File Format
+
+The app expects input files to contain:
+
+- A metadata block at the top
+- A data block with:
+  - A `Well` column (e.g., `A1`, `B12`)
+  - A `Time` column (minutes)
+  - One or more OD600 measurement columns
+
+Example snippet:
+
+    Well    Time    OD600
+    A1      0       0.05
+    A1      15      0.08
+    ...
+
+## License
+
+MIT License.
+
+Developed by @cmalaj with Streamlit + Plotly.
