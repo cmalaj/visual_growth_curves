@@ -150,19 +150,17 @@ for i, df in enumerate(all_data):
                 if row not in selected_rows or col_num not in selected_cols:
                     continue
                 colour = well_colours.get(col, "#CCCCCC")  # fallback grey
-                    x=df.index,
-                    y=df[col],
-                label = plate_layouts.get(plate, {}).get(col, col)
-                fig.add_trace(go.Scatter(
-                    x=df.index,
-                    y=df[col],
-                    name=label,
-                    mode='lines',
-                    line=dict(color=colour)
-                ))
-                    mode='lines',
-                    line=dict(color=colour)
-                ))
+                x=df.index,
+                y=df[col],
+            label = plate_layouts.get(plate, {}).get(col, col)
+            fig.add_trace(go.Scatter(
+                x=df.index,
+                y=df[col],
+                name=label,
+                mode='lines',
+                line=dict(color=colour)
+            ))
+
 
         fig.update_layout(
             xaxis_title="Time (minutes)",
