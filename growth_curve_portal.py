@@ -56,23 +56,6 @@ def parse_growth_file(file, plate_num):
 
 if uploaded_files:
     all_data = []
-
-# --- Plate Layout Editor ---
-st.sidebar.header("Plate Layout Configuration")
-
-plate_layouts = {}
-for i, df in enumerate(all_data):
-    plate_name = df["Plate"].iloc[0]
-    st.sidebar.subheader(f"{plate_name} Layout")
-
-    layout = {}
-    cols = st.sidebar.columns(12)
-    for row in string.ascii_uppercase[:8]:
-        for col_idx in range(1, 13):
-            well = f"{row}{col_idx}"
-            user_label = st.sidebar.text_input(f"{well}", value=well, key=f"{plate_name}_{well}")
-            layout[well] = user_label.strip()
-    plate_layouts[plate_name] = layout
     all_summary = []
 
     for i, file in enumerate(uploaded_files):
@@ -150,16 +133,10 @@ for i, df in enumerate(all_data):
                 if row not in selected_rows or col_num not in selected_cols:
                     continue
                 colour = well_colours.get(col, "#CCCCCC")  # fallback grey
-                    x=df.index,
-                    y=df[col],
-                label = plate_layouts.get(plate, {}).get(col, col)
                 fig.add_trace(go.Scatter(
                     x=df.index,
                     y=df[col],
-                    name=label,
-                    mode='lines',
-                    line=dict(color=colour)
-                ))
+                    name=col,
                     mode='lines',
                     line=dict(color=colour)
                 ))
