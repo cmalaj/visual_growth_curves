@@ -26,11 +26,17 @@ def parse_growth_file(file, plate_num):
     header_line = next(i for i, line in enumerate(lines) if line.strip().startswith('Time'))
     headers = lines[header_line].split("\t")
 
-    data_rows = [
-        row.split("\t") for row in lines[header_line + 1:]
-        if re.match(r'^\d+:\d+:\d+', row)
-        and len(row.split("\t")) == len(headers)
-    ]
+    data_rows = []
+    for row in lines[header_line + 1:]:
+        if not re.match(r'^\d+:\d+:\d+', row):
+            continue
+        cols = row.split("\t")
+        if len(cols) != len(headers):
+            continue
+        # Skip rows that are mostly empty
+        if sum([1 for v in cols[1:] if v.strip()]) < 5:
+            continue
+        data_rows.append(cols)
 
     df = pd.DataFrame(data_rows, columns=headers)
     df["Time"] = df["Time"].apply(time_to_minutes)
