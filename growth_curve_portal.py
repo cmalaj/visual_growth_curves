@@ -14,7 +14,7 @@ import re
 import copy
 
 st.set_page_config(layout="wide")
-st.title("Growth Curve Visualisation Portal (Growth Time-Series  + Heatmap YO!)")
+st.title("Growth Curve Visualisation Portal (Growth Time-Series  + Heatmap)")
 
 
 # Generate 96 distinct colours from the rainbow colormap
@@ -92,8 +92,6 @@ if uploaded_files:
     with row_col1:
         if st.button("Select all rows"):
             selected_rows = all_rows
-        elif st.button("Select none"):
-            selected_rows = []
         else:
             selected_rows = st.sidebar.multiselect("Choose rows (A–H):", all_rows, default=all_rows, key="row_select")
 
@@ -103,8 +101,6 @@ if uploaded_files:
     with col_col1:
         if st.button("Select all cols"):
             selected_cols = all_cols
-        elif st.button("Select none cols"):
-            selected_cols = []
         else:
             selected_cols = st.sidebar.multiselect("Choose columns (1–12):", all_cols, default=all_cols, key="col_select")  
     
