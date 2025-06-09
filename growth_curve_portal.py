@@ -156,7 +156,7 @@ if uploaded_files:
     import io
     from PIL import Image
 
-    dpi_ts = st.number_input("Time-Series Export DPI", min_value=72, max_value=600, value=300, step=10, key=f"dpi_ts_{plate}")
+    dpi_ts = st.number_input("Time-Series Export DPI YO!", min_value=72, max_value=600, value=300, step=10, key=f"dpi_ts_{plate}")
     scale_ts = dpi_ts / 72
 
     ts_png_buf = io.BytesIO()
