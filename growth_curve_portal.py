@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -15,7 +14,6 @@ import copy
 
 st.set_page_config(layout="wide")
 st.title("Growth Curve Visualisation Portal v. 1.0")
-
 
 # Generate 96 distinct colours from the rainbow colormap
 rainbow_cmap = cm.get_cmap("gist_rainbow", 96)
@@ -78,37 +76,42 @@ if uploaded_files:
         summary["Plate"] = f"Plate {i + 1}"
         all_summary.append(summary)
 
-    # Add well selection filters
     # Sidebar: Time-series well selection controls
     st.sidebar.header("Time-Series Controls")
 
-    # Define full row/col lists
     all_rows = list("ABCDEFGH")
     all_cols = list(range(1, 13))
 
-    # Add row toggle buttons
+    # Row selector
     st.sidebar.subheader("Rows")
-    row_col1, row_col2 = st.sidebar.columns([1, 2])
-    with row_col1:
-        if st.button("Select all rows"):
-            selected_rows = all_rows
-        else:
-            selected_rows = st.sidebar.multiselect("Choose rows (A–H):", all_rows, default=all_rows, key="row_select")
+    select_all_rows = st.sidebar.checkbox("Select all rows", value=True)
+    if select_all_rows:
+        selected_rows = all_rows
+    else:
+        selected_rows = st.sidebar.multiselect("Choose rows (A–H):", all_rows, default=all_rows, key="row_select")
 
-    # Add column toggle buttons
+    # Column selector
     st.sidebar.subheader("Columns")
-    col_col1, col_col2 = st.sidebar.columns([1, 2])
-    with col_col1:
-        if st.button("Select all columns"):
-            selected_cols = all_cols
-        else:
-            selected_cols = st.sidebar.multiselect("Choose columns (1–12):", all_cols, default=all_cols, key="col_select")  
-    
-    
-    # Interactive line plots using Plotly
+    select_all_cols = st.sidebar.checkbox("Select all columns", value=True)
+    if select_all_cols:
+        selected_cols = all_cols
+    else:
+        selected_cols = st.sidebar.multiselect("Choose columns (1–12):", all_cols, default=all_cols, key="col_select")
+
+    # Per-plate visualisation
     for idx, df in enumerate(all_data):
         plate = df["Plate"].iloc[0]
         st.subheader(f"{plate} - Time Series")
+
+        # Custom well labels for this plate only
+        custom_labels = {}
+        with st.sidebar.expander(f"Custom Labels for {plate}"):
+            for row in selected_rows:
+                for col_num in selected_cols:
+                    well_id = f"{row}{col_num}"
+                    label_key = f"{plate}_{well_id}_label"
+                    label = st.text_input(f"{plate} - Label for {well_id}", value=well_id, key=label_key)
+                    custom_labels[well_id] = label
 
         # Axis range override UI
         with st.expander(f"Adjust axis ranges for {plate}"):
@@ -130,13 +133,15 @@ if uploaded_files:
                     continue
                 row, col_num = match.groups()
                 col_num = int(col_num)
+                well_id = f"{row}{col_num}"
                 if row not in selected_rows or col_num not in selected_cols:
                     continue
-                colour = well_colours.get(col, "#CCCCCC")  # fallback grey
+                colour = well_colours.get(well_id, "#CCCCCC")  # fallback grey
+                label = custom_labels.get(well_id, well_id)
                 fig.add_trace(go.Scatter(
                     x=df.index,
                     y=df[col],
-                    name=col,
+                    name=label,
                     mode='lines',
                     line=dict(color=colour)
                 ))
@@ -144,15 +149,13 @@ if uploaded_files:
         fig.update_layout(
             xaxis_title="Time (minutes)",
             yaxis_title="OD600",
-            legend_title="Well ID",
+            legend_title="Well Label",
             margin=dict(l=50, r=50, t=50, b=50),
             xaxis=dict(range=[x_min, x_max]),
             yaxis=dict(range=[y_min, y_max])
         )
 
         st.plotly_chart(fig, use_container_width=True)
-
-    
 
     # Generalised Heatmap Visualisation for "Mean" and "SD"
     metrics = ["Mean", "SD"]
@@ -196,5 +199,3 @@ if uploaded_files:
     plt.tight_layout()
     st.subheader("Plate Summary Heatmaps")
     st.pyplot(fig)
-
-    
