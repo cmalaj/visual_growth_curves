@@ -254,8 +254,11 @@ if uploaded_files:
         fig = go.Figure()
 
         if group_replicates:
-            # Group by label → collect replicates
+            import re
+
+            # Group by normalized label (e.g., strip '-T1', '-T2')
             label_to_wells = {}
+
             for col in df.columns:
                 if col in ["Plate"] or col.startswith("T°"):
                     continue
@@ -267,32 +270,38 @@ if uploaded_files:
                 well_id = f"{row}{col_num}"
                 if row not in selected_rows or col_num not in selected_cols:
                     continue
-                label = custom_labels.get(well_id, well_id)
-                label_to_wells.setdefault(label, []).append(col)
 
-            for label, replicate_cols in label_to_wells.items():
+                # Get the label from layout or fallback
+                label = custom_labels.get(well_id, well_id)
+
+                # ✅ Strip trailing '-T1', '-T2', etc. for grouping
+                group_label = re.sub(r"-T\d$", "", label)
+
+                label_to_wells.setdefault(group_label, []).append(col)
+
+            for group_label, replicate_cols in label_to_wells.items():
                 if not replicate_cols:
                     continue
+                # Use first well to determine color
                 colour = well_colours.get(replicate_cols[0], "#CCCCCC")
+                x_vals = df.index if time_unit == "Minutes" else df.index / 60
                 values = df[replicate_cols].values  # shape: time x replicates
                 mean_vals = np.nanmean(values, axis=1)
                 std_vals = np.nanstd(values, axis=1)
-                x_vals = df.index if time_unit == "Minutes" else df.index / 60
 
-                # Convert matplotlib RGBA to valid Plotly 'rgba(...)' string
+                # Convert matplotlib RGBA to valid Plotly rgba string
                 rgba = mcolors.to_rgba(colour, alpha=0.2)
                 fillcolor = f"rgba({int(rgba[0]*255)}, {int(rgba[1]*255)}, {int(rgba[2]*255)}, {rgba[3]})"
 
-                # Mean trace
                 # Mean line
                 fig.add_trace(go.Scatter(
                     x=x_vals,
                     y=mean_vals,
                     mode='lines',
-                    name=label,  # cleaner legend label
+                    name=group_label,
                     line=dict(color=colour, width=2),
-                    legendgroup=label,
-                    legendgrouptitle=dict(text=label),  # ✅ Link group title
+                    legendgroup=group_label,
+                    legendgrouptitle=dict(text=group_label),
                     showlegend=True
                 ))
 
@@ -305,10 +314,11 @@ if uploaded_files:
                     line=dict(color='rgba(255,255,255,0)'),
                     hoverinfo="skip",
                     showlegend=False,
-                    legendgroup=label
+                    legendgroup=group_label
                 ))
+
         else:
-            # Existing per-well trace logic (you already have this elsewhere)
+            # Fall back to individual wells
             for col in df.columns:
                 if col in ["Plate"] or col.startswith("T°"):
                     continue
@@ -323,6 +333,7 @@ if uploaded_files:
                 label = custom_labels.get(well_id, well_id)
                 colour = well_colours.get(well_id, "#CCCCCC")
                 x_vals = df.index if time_unit == "Minutes" else df.index / 60
+
                 fig.add_trace(go.Scatter(
                     x=x_vals,
                     y=df[col],
@@ -331,7 +342,7 @@ if uploaded_files:
                     line=dict(color=colour)
                 ))
 
-        # ✅ Always set layout and render the plot
+        # Final plot layout + render
         fig.update_layout(
             title=custom_title,
             xaxis_title=f"Time ({time_unit})",
