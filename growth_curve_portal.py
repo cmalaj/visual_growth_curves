@@ -215,6 +215,17 @@ if uploaded_files:
                 index=95,  # Default to H12
                 key=f"{plate}_blank_select"
             )
+        if apply_blank and blank_well in df.columns:
+            df_corrected = df.copy()
+            blank_values = df[blank_well]
+            for col in df.columns:
+                if col not in ["Plate"] and not col.startswith("T°"):
+                    df_corrected[col] = df[col] - blank_values
+            df = df_corrected
+
+            if df.drop(columns=["Plate"]).lt(0).any().any():
+                st.warning(f"{plate_name}: Some values are negative after blank correction.")
+
         # Build plot
         fig = go.Figure()
 
