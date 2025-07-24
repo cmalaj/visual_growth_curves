@@ -101,6 +101,15 @@ if uploaded_files:
     for i, file in enumerate(uploaded_files):
         df = parse_growth_file(file, i + 1)
         plate_name = f"Plate {i + 1}"
+        filename = file.name
+        default_title = filename or plate_name
+        custom_title = st.text_input(
+            f"Custom Title for {plate_name}",
+            value=default_title,
+            key=f"title_{plate_name}"
+        )
+
+
         st.markdown(f"---\n### {plate_name} Layout Settings")
 
         layout_mode = st.radio(
@@ -223,8 +232,6 @@ if uploaded_files:
                     df_corrected[col] = df[col] - blank_values
             df = df_corrected
 
-            if df.drop(columns=["Plate"]).lt(0).any().any():
-                st.warning(f"{plate_name}: Some values are negative after blank correction.")
 
         # Build plot
         fig = go.Figure()
@@ -250,6 +257,7 @@ if uploaded_files:
                 ))
 
         fig.update_layout(
+            title=custom_title,
             xaxis_title="Time (minutes)",
             yaxis_title="OD600",
             legend_title="Well Label",
