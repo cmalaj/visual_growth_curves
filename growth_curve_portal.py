@@ -288,7 +288,7 @@ if uploaded_files:
 # Comparison Plot Section
 # ========================
 st.markdown("---")
-st.header("Comparison Plot")
+st.header("📊 Comparison Plot")
 
 # Time unit selection for comparison plot
 comparison_time_unit = st.radio(
@@ -298,24 +298,45 @@ comparison_time_unit = st.radio(
     key="comparison_time_unit"
 )
 
+# ✅ NEW: Option to select same wells across all plates
+use_shared_selection = st.checkbox("🧪 Use same wells across all plates?", value=False)
+
 # Store selected wells per plate
 selected_wells_per_plate = {}
 
 st.subheader("Select wells to compare")
 
-# Grouped multiselects per plate
-for df in all_data:
-    plate = df["Plate"].iloc[0]
-    wells = [col for col in df.columns if re.match(r"^[A-H]\d{1,2}$", col)]
-
-    selected = st.multiselect(
-        f"{plate} – Select wells to compare",
-        options=wells,
-        key=f"compare_select_{plate}"
+if use_shared_selection:
+    # ✅ Shared well selector
+    shared_wells = st.multiselect(
+        "Select wells (applies to all plates)",
+        options=[f"{row}{col}" for row in "ABCDEFGH" for col in range(1, 13)],
+        help="These wells will be plotted from all uploaded plates.",
+        key="shared_well_selector"
     )
 
-    if selected:
-        selected_wells_per_plate[plate] = selected
+    # Assign selected wells to each plate
+    for df in all_data:
+        plate = df["Plate"].iloc[0]
+        wells_in_plate = [col for col in df.columns if re.match(r"^[A-H]\d{1,2}$", col)]
+        valid_shared = [w for w in shared_wells if w in wells_in_plate]
+        if valid_shared:
+            selected_wells_per_plate[plate] = valid_shared
+
+else:
+    # 🔁 Per-plate multiselects
+    for df in all_data:
+        plate = df["Plate"].iloc[0]
+        wells = [col for col in df.columns if re.match(r"^[A-H]\d{1,2}$", col)]
+
+        selected = st.multiselect(
+            f"{plate} – Select wells to compare",
+            options=wells,
+            key=f"compare_select_{plate}"
+        )
+
+        if selected:
+            selected_wells_per_plate[plate] = selected
 
 # Axis range control
 with st.expander("Adjust axes for comparison plot"):
@@ -335,7 +356,7 @@ with st.expander("Adjust axes for comparison plot"):
         comp_y_min = st.number_input("Y min (OD600)", value=y_min_default, step=0.1, key="comp_ymin")
         comp_y_max = st.number_input("Y max (OD600)", value=y_max_default, step=0.1, key="comp_ymax")
 
-# ✅ Only show the plot if at least one well is selected
+# ✅ Plot if any wells are selected
 if any(selected_wells_per_plate.values()):
     fig = go.Figure()
 
@@ -348,6 +369,7 @@ if any(selected_wells_per_plate.values()):
             if well_id not in df.columns:
                 continue
 
+            # Label fallback logic
             custom_key = f"{plate_name}_{well_id}_label"
             label = st.session_state.get(custom_key, f"{plate_name} - {well_id}")
             colour = well_colours.get(well_id, "#CCCCCC")
