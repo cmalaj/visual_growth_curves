@@ -400,7 +400,7 @@ if any(selected_wells_per_plate.values()):
                     x=np.concatenate([time_grid, time_grid[::-1]]),
                     y=np.concatenate([mean_vals + std_vals, (mean_vals - std_vals)[::-1]]),
                     fill='toself',
-                    fillcolor=mcolors.to_rgba(colour, alpha=0.2),
+                    fillcolor=f'rgba{mcolors.to_rgba(colour, alpha=0.2)}',
                     line=dict(color='rgba(255,255,255,0)'),
                     hoverinfo="skip",
                     name=f"{well_id} ± SD",
