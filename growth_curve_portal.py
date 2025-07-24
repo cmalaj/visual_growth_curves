@@ -50,6 +50,13 @@ def parse_growth_file(file, plate_num):
         if col != "Time":
             df[col] = pd.to_numeric(df[col], errors="coerce")
     df["Plate"] = f"Plate {plate_num}"
+    if apply_blank and blank_well in df.columns:
+        df_corrected = df.copy()
+        blank_values = df[blank_well]
+        for col in df.columns:
+            if col not in ["Time", "Plate", blank_well] and not col.startswith("T°"):
+                df_corrected[col] = df[col] - blank_values
+        df = df_corrected
     return df.set_index("Time")
 
 def generate_preset_layout(strain, phages):
@@ -204,6 +211,17 @@ if uploaded_files:
                 y_min = st.number_input(f"{plate} Y min (OD600)", value=float(df.drop(columns='Plate', errors='ignore').min().min()), step=0.1, key=f"{plate}_ymin")
                 y_max = st.number_input(f"{plate} Y max (OD600)", value=float(df.drop(columns='Plate', errors='ignore').max().max()), step=0.1, key=f"{plate}_ymax")
 
+        st.subheader(f"{plate} - Time Series")
+
+        # Blank correction UI
+        with st.expander(f"Blank Correction for {plate}"):
+            apply_blank = st.checkbox(f"Apply blank correction for {plate}", key=f"{plate}_blank_toggle")
+            blank_well = st.selectbox(
+                f"Select blank well for {plate}",
+                options=[f"{r}{c}" for r in "ABCDEFGH" for c in range(1, 13)],
+                index=95,  # Default to H12
+                key=f"{plate}_blank_select"
+            )
         # Build plot
         fig = go.Figure()
 
