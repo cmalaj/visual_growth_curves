@@ -280,13 +280,15 @@ if uploaded_files:
                 x_vals = df.index if time_unit == "Minutes" else df.index / 60
 
                 # Mean trace
+                # Mean line
                 fig.add_trace(go.Scatter(
                     x=x_vals,
                     y=mean_vals,
-                    name=label + " – Mean",
                     mode='lines',
-                    line=dict(color=colour),
+                    name=label,  # cleaner legend label
+                    line=dict(color=colour, width=2),
                     legendgroup=label,
+                    legendgrouptitle=dict(text=label),  # ✅ Link group title
                     showlegend=True
                 ))
 
@@ -295,10 +297,9 @@ if uploaded_files:
                     x=np.concatenate([x_vals, x_vals[::-1]]),
                     y=np.concatenate([mean_vals + std_vals, (mean_vals - std_vals)[::-1]]),
                     fill='toself',
-                    fillcolor=f"rgba{mcolors.to_rgba(colour, alpha=0.2)}",
+                    fillcolor=f"rgba({int(rgba[0]*255)}, {int(rgba[1]*255)}, {int(rgba[2]*255)}, {rgba[3]})",
                     line=dict(color='rgba(255,255,255,0)'),
                     hoverinfo="skip",
-                    name=f"{label} ± SD",
                     showlegend=False,
                     legendgroup=label
                 ))
