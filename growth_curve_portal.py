@@ -226,7 +226,6 @@ if uploaded_files:
                 y_min = st.number_input(f"{plate} Y min (OD600)", value=float(df.drop(columns='Plate', errors='ignore').min().min()), step=0.1, key=f"{plate}_ymin")
                 y_max = st.number_input(f"{plate} Y max (OD600)", value=float(df.drop(columns='Plate', errors='ignore').max().max()), step=0.1, key=f"{plate}_ymax")
 
-        st.subheader(f"{plate} - Time Series")
 
         # Blank correction UI
         with st.expander(f"Blank Correction for {plate}"):
@@ -241,7 +240,7 @@ if uploaded_files:
             df_corrected = df.copy()
             blank_values = df[blank_well]
             for col in df.columns:
-                if col not in ["Plate"] and not col.startswith("T°"):
+                for col in df.filter(regex=r"^[A-H]\d{1,2}$").columns:
                     df_corrected[col] = df[col] - blank_values
             df = df_corrected
 
