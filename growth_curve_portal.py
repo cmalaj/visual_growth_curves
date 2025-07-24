@@ -366,7 +366,7 @@ if any(selected_wells_per_plate.values()):
 
     if use_shared_selection and show_mean_with_ribbon:
         # For each shared well, collect matching data across plates
-        for well_id in shared_well_selection:
+        for well_id in shared_wells:
             time_grid = None
             all_profiles = []
 
