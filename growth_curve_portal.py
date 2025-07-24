@@ -314,7 +314,11 @@ if use_shared_selection:
         help="These wells will be plotted from all uploaded plates.",
         key="shared_well_selector"
     )
-
+    show_mean_with_ribbon = st.checkbox(
+        "📈 Show average ± SD for selected wells",
+        value=True,
+        help="Plots the average profile across all plates for each selected well with a shaded SD band"
+    )
     # Assign selected wells to each plate
     for df in all_data:
         plate = df["Plate"].iloc[0]
@@ -360,28 +364,72 @@ with st.expander("Adjust axes for comparison plot"):
 if any(selected_wells_per_plate.values()):
     fig = go.Figure()
 
-    for plate_name, well_list in selected_wells_per_plate.items():
-        df = next((d for d in all_data if d["Plate"].iloc[0] == plate_name), None)
-        if df is None:
-            continue
+    if use_shared_selection and show_mean_with_ribbon:
+        # For each shared well, collect matching data across plates
+        for well_id in shared_well_selection:
+            time_grid = None
+            all_profiles = []
 
-        for well_id in well_list:
-            if well_id not in df.columns:
+            for df in all_data:
+                if well_id in df.columns:
+                    x_vals = df.index if comparison_time_unit == "Minutes" else df.index / 60
+                    y_vals = df[well_id]
+
+                    if time_grid is None:
+                        time_grid = x_vals
+                    all_profiles.append(y_vals.values)
+
+            if all_profiles:
+                y_array = np.array(all_profiles)
+                mean_vals = np.nanmean(y_array, axis=0)
+                std_vals = np.nanstd(y_array, axis=0)
+
+                colour = well_colours.get(well_id, "#CCCCCC")
+
+                # Mean line
+                fig.add_trace(go.Scatter(
+                    x=time_grid,
+                    y=mean_vals,
+                    mode='lines',
+                    name=f"{well_id} – Mean",
+                    line=dict(color=colour, width=2)
+                ))
+
+                # Shaded SD ribbon
+                fig.add_trace(go.Scatter(
+                    x=np.concatenate([time_grid, time_grid[::-1]]),
+                    y=np.concatenate([mean_vals + std_vals, (mean_vals - std_vals)[::-1]]),
+                    fill='toself',
+                    fillcolor=mcolors.to_rgba(colour, alpha=0.2),
+                    line=dict(color='rgba(255,255,255,0)'),
+                    hoverinfo="skip",
+                    name=f"{well_id} ± SD",
+                    showlegend=False
+                ))
+
+    else:
+        # Default: plot each trace individually
+        for plate_name, well_list in selected_wells_per_plate.items():
+            df = next((d for d in all_data if d["Plate"].iloc[0] == plate_name), None)
+            if df is None:
                 continue
 
-            # Label fallback logic
-            custom_key = f"{plate_name}_{well_id}_label"
-            label = st.session_state.get(custom_key, f"{plate_name} - {well_id}")
-            colour = well_colours.get(well_id, "#CCCCCC")
-            x_vals = df.index if comparison_time_unit == "Minutes" else df.index / 60
+            for well_id in well_list:
+                if well_id not in df.columns:
+                    continue
 
-            fig.add_trace(go.Scatter(
-                x=x_vals,
-                y=df[well_id],
-                name=label,
-                mode='lines',
-                line=dict(color=colour)
-            ))
+                custom_key = f"{plate_name}_{well_id}_label"
+                label = st.session_state.get(custom_key, f"{plate_name} - {well_id}")
+                colour = well_colours.get(well_id, "#CCCCCC")
+                x_vals = df.index if comparison_time_unit == "Minutes" else df.index / 60
+
+                fig.add_trace(go.Scatter(
+                    x=x_vals,
+                    y=df[well_id],
+                    name=label,
+                    mode='lines',
+                    line=dict(color=colour)
+                ))
 
     fig.update_layout(
         title="Overlay Comparison Plot",
