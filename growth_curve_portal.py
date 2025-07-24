@@ -303,17 +303,41 @@ if uploaded_files:
                     legendgroup=label
                 ))
         else:
-            fig.update_layout(
-                title=custom_title,
-                xaxis_title=f"Time ({time_unit})",
-                yaxis_title="OD600",
-                legend_title="Well Label",
-                margin=dict(l=50, r=50, t=50, b=50),
-                xaxis=dict(range=[x_min, x_max]),
-                yaxis=dict(range=[y_min, y_max])
-            )
+            # Existing per-well trace logic (you already have this elsewhere)
+            for col in df.columns:
+                if col in ["Plate"] or col.startswith("T°"):
+                    continue
+                match = re.match(r"([A-H])(\d{1,2})", col)
+                if not match:
+                    continue
+                row, col_num = match.groups()
+                col_num = int(col_num)
+                well_id = f"{row}{col_num}"
+                if row not in selected_rows or col_num not in selected_cols:
+                    continue
+                label = custom_labels.get(well_id, well_id)
+                colour = well_colours.get(well_id, "#CCCCCC")
+                x_vals = df.index if time_unit == "Minutes" else df.index / 60
+                fig.add_trace(go.Scatter(
+                    x=x_vals,
+                    y=df[col],
+                    name=label,
+                    mode='lines',
+                    line=dict(color=colour)
+                ))
 
-            st.plotly_chart(fig, use_container_width=True)
+        # ✅ Always set layout and render the plot
+        fig.update_layout(
+            title=custom_title,
+            xaxis_title=f"Time ({time_unit})",
+            yaxis_title="OD600",
+            legend_title="Well Label",
+            margin=dict(l=50, r=50, t=50, b=50),
+            xaxis=dict(range=[x_min, x_max]),
+            yaxis=dict(range=[y_min, y_max])
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
 
 
 # ========================
