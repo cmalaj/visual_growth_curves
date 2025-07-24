@@ -303,20 +303,17 @@ if uploaded_files:
                     legendgroup=label
                 ))
         else:
-            # Original individual line plotting code (as you already have)
-        
+            fig.update_layout(
+                title=custom_title,
+                xaxis_title=f"Time ({time_unit})",
+                yaxis_title="OD600",
+                legend_title="Well Label",
+                margin=dict(l=50, r=50, t=50, b=50),
+                xaxis=dict(range=[x_min, x_max]),
+                yaxis=dict(range=[y_min, y_max])
+            )
 
-        fig.update_layout(
-            title=custom_title,
-            xaxis_title=f"Time ({time_unit})",
-            yaxis_title="OD600",
-            legend_title="Well Label",
-            margin=dict(l=50, r=50, t=50, b=50),
-            xaxis=dict(range=[x_min, x_max]),
-            yaxis=dict(range=[y_min, y_max])
-        )
-
-        st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True)
 
 
 # ========================
