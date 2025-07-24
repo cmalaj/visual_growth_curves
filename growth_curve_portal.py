@@ -279,6 +279,10 @@ if uploaded_files:
                 std_vals = np.nanstd(values, axis=1)
                 x_vals = df.index if time_unit == "Minutes" else df.index / 60
 
+                # Convert matplotlib RGBA to valid Plotly 'rgba(...)' string
+                rgba = mcolors.to_rgba(colour, alpha=0.2)
+                fillcolor = f"rgba({int(rgba[0]*255)}, {int(rgba[1]*255)}, {int(rgba[2]*255)}, {rgba[3]})"
+
                 # Mean trace
                 # Mean line
                 fig.add_trace(go.Scatter(
@@ -297,7 +301,7 @@ if uploaded_files:
                     x=np.concatenate([x_vals, x_vals[::-1]]),
                     y=np.concatenate([mean_vals + std_vals, (mean_vals - std_vals)[::-1]]),
                     fill='toself',
-                    fillcolor=f"rgba({int(rgba[0]*255)}, {int(rgba[1]*255)}, {int(rgba[2]*255)}, {rgba[3]})",
+                    fillcolor=fillcolor,
                     line=dict(color='rgba(255,255,255,0)'),
                     hoverinfo="skip",
                     showlegend=False,
