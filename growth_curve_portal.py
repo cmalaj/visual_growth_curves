@@ -301,7 +301,6 @@ if uploaded_files:
                     name=group_label,
                     line=dict(color=colour, width=2),
                     legendgroup=group_label,
-                    legendgrouptitle=dict(text=group_label),
                     showlegend=True
                 ))
 
