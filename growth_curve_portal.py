@@ -283,4 +283,67 @@ if uploaded_files:
 
         st.plotly_chart(fig, use_container_width=True)
 
+        st.markdown("---")
+        st.header("Comparison Plot")
+
+        # Time unit selection for the comparison plot
+        comparison_time_unit = st.radio(
+            "Time Axis Unit for Comparison Plot",
+            options=["Minutes", "Hours"],
+            horizontal=True,
+            key="comparison_time_unit"
+        )
+
+        # Build a list of all well options across all plates
+        well_options = []
+        for df in all_data:
+            plate = df["Plate"].iloc[0]
+            for col in df.columns:
+                if re.match(r"^[A-H]\d{1,2}$", col):
+                    well_options.append(f"{plate} | {col}")
+        
+        selected_wells = st.multiselect(
+            "Select wells to compare across plates",
+            options=well_options,
+            help="You can select multiple wells from different plates to overlay"
+        )
+
+
+        if selected_wells:
+            fig = go.Figure()
+            
+            for sel in selected_wells:
+                plate_name, well_id = sel.split(" | ")
+                df = next((d for d in all_data if d["Plate"].iloc[0] == plate_name), None)
+                if df is None or well_id not in df.columns:
+                    continue
+
+                # Get label (custom or default)
+                custom_key = f"{plate_name}_{well_id}_label"
+                label = st.session_state.get(custom_key, f"{plate_name} - {well_id}")
+                
+                # Get color
+                colour = well_colours.get(well_id, "#CCCCCC")
+
+                # X-axis unit
+                x_vals = df.index if comparison_time_unit == "Minutes" else df.index / 60
+
+                fig.add_trace(go.Scatter(
+                    x=x_vals,
+                    y=df[well_id],
+                    name=label,
+                    mode='lines',
+                    line=dict(color=colour)
+                ))
+
+            fig.update_layout(
+                title="Overlay Comparison Plot",
+                xaxis_title=f"Time ({comparison_time_unit})",
+                yaxis_title="OD600",
+                legend_title="Well Label",
+                margin=dict(l=50, r=50, t=50, b=50)
+            )
+
+            st.plotly_chart(fig, use_container_width=True)
+
     
