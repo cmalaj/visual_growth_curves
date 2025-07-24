@@ -403,17 +403,15 @@ if any(selected_wells_per_plate.values()):
 
                 # Shaded SD ribbon
                 fig.add_trace(go.Scatter(
-                    x=np.concatenate([time_grid, time_grid[::-1]]),
-                    y=np.concatenate([mean_vals + std_vals, (mean_vals - std_vals)[::-1]]),
-                    fill='toself',
-                    fillcolor=fillcolor,
-                    line=dict(color='rgba(255,255,255,0)'),
-                    hoverinfo="skip",
-                    name=f"{well_id} ± SD",
-                    showlegend=False,            # ❌ Don’t show in legend
-                    legendgroup=well_id,         # 🔗 Same legend group
-                    visible='legendonly'         # 👀 Starts hidden unless line is shown
-                ))
+                x=np.concatenate([time_grid, time_grid[::-1]]),
+                y=np.concatenate([mean_vals + std_vals, (mean_vals - std_vals)[::-1]]),
+                fill='toself',
+                fillcolor=fillcolor,
+                line=dict(color='rgba(255,255,255,0)'),
+                hoverinfo="skip",
+                showlegend=False,
+                legendgroup=well_id  # Ribbon toggles with mean line
+            ))
 
     else:
         # Default: plot each trace individually
