@@ -288,7 +288,7 @@ if uploaded_files:
 # Comparison Plot Section
 # ========================
 st.markdown("---")
-st.header("📊 Comparison Plot")
+st.header("Comparison Plot")
 
 # Time unit selection for comparison plot
 comparison_time_unit = st.radio(
@@ -299,7 +299,7 @@ comparison_time_unit = st.radio(
 )
 
 # ✅ NEW: Option to select same wells across all plates
-use_shared_selection = st.checkbox("🧪 Use same wells across all plates?", value=False)
+use_shared_selection = st.checkbox("Use same wells across all plates?", value=False)
 
 # Store selected wells per plate
 selected_wells_per_plate = {}
@@ -315,7 +315,7 @@ if use_shared_selection:
         key="shared_well_selector"
     )
     show_mean_with_ribbon = st.checkbox(
-        "📈 Show average ± SD for selected wells",
+        "Show average ± SD for selected wells",
         value=True,
         help="Plots the average profile across all plates for each selected well with a shaded SD band"
     )
@@ -360,7 +360,7 @@ with st.expander("Adjust axes for comparison plot"):
         comp_y_min = st.number_input("Y min (OD600)", value=y_min_default, step=0.1, key="comp_ymin")
         comp_y_max = st.number_input("Y max (OD600)", value=y_max_default, step=0.1, key="comp_ymax")
 
-# ✅ Plot if any wells are selected
+# Plot if any wells are selected
 if any(selected_wells_per_plate.values()):
     fig = go.Figure()
 
@@ -392,7 +392,9 @@ if any(selected_wells_per_plate.values()):
                     y=mean_vals,
                     mode='lines',
                     name=f"{well_id} – Mean",
-                    line=dict(color=colour, width=2)
+                    line=dict(color=colour, width=2),
+                    legendgroup=well_id,         # 🔗 Link to the same group
+                    showlegend=True
                 ))
 
                 # Shaded SD ribbon
@@ -404,7 +406,9 @@ if any(selected_wells_per_plate.values()):
                     line=dict(color='rgba(255,255,255,0)'),
                     hoverinfo="skip",
                     name=f"{well_id} ± SD",
-                    showlegend=False
+                    showlegend=False,            # ❌ Don’t show in legend
+                    legendgroup=well_id,         # 🔗 Same legend group
+                    visible='legendonly'         # 👀 Starts hidden unless line is shown
                 ))
 
     else:
