@@ -288,7 +288,7 @@ if uploaded_files:
 # Comparison Plot Section
 # ========================
 st.markdown("---")
-st.header("📊 Comparison Plot")
+st.header("Comparison Plot")
 
 # Time unit selection for comparison plot
 comparison_time_unit = st.radio(
@@ -322,7 +322,7 @@ with st.expander("Adjust axes for comparison plot"):
     col1, col2 = st.columns(2)
 
     with col1:
-        all_times = pd.concat([df.index for df in all_data])
+        all_times = pd.concat([pd.Series(df.index) for df in all_data])
         x_min_default = all_times.min() if comparison_time_unit == "Minutes" else all_times.min() / 60
         x_max_default = all_times.max() if comparison_time_unit == "Minutes" else all_times.max() / 60
         comp_x_min = st.number_input("X min", value=x_min_default, step=0.1, key="comp_xmin")
