@@ -386,6 +386,10 @@ if any(selected_wells_per_plate.values()):
 
                 colour = well_colours.get(well_id, "#CCCCCC")
 
+                # Convert matplotlib RGBA to valid Plotly 'rgba(...)' string
+                rgba = mcolors.to_rgba(colour, alpha=0.2)
+                fillcolor = f"rgba({int(rgba[0]*255)}, {int(rgba[1]*255)}, {int(rgba[2]*255)}, {rgba[3]})"
+
                 # Mean line
                 fig.add_trace(go.Scatter(
                     x=time_grid,
@@ -402,7 +406,7 @@ if any(selected_wells_per_plate.values()):
                     x=np.concatenate([time_grid, time_grid[::-1]]),
                     y=np.concatenate([mean_vals + std_vals, (mean_vals - std_vals)[::-1]]),
                     fill='toself',
-                    fillcolor=f'rgba{mcolors.to_rgba(colour, alpha=0.2)}',
+                    fillcolor=fillcolor,
                     line=dict(color='rgba(255,255,255,0)'),
                     hoverinfo="skip",
                     name=f"{well_id} ± SD",
