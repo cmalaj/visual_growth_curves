@@ -50,13 +50,6 @@ def parse_growth_file(file, plate_num):
         if col != "Time":
             df[col] = pd.to_numeric(df[col], errors="coerce")
     df["Plate"] = f"Plate {plate_num}"
-    if apply_blank and blank_well in df.columns:
-        df_corrected = df.copy()
-        blank_values = df[blank_well]
-        for col in df.columns:
-            if col not in ["Time", "Plate", blank_well] and not col.startswith("T°"):
-                df_corrected[col] = df[col] - blank_values
-        df = df_corrected
     return df.set_index("Time")
 
 def generate_preset_layout(strain, phages):
