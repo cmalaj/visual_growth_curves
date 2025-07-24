@@ -245,12 +245,20 @@ if uploaded_files:
             df = df_corrected
 
 
-
+        group_replicates = st.checkbox(
+            f"Group technical replicates for {plate}?",
+            value=False,
+            key=f"group_reps_{plate}"
+        )
         # Build plot
         fig = go.Figure()
 
-        for col in df.columns:
-            if col not in ["Plate"] and not col.startswith("T°"):
+        if group_replicates:
+            # Group by label → collect replicates
+            label_to_wells = {}
+            for col in df.columns:
+                if col in ["Plate"] or col.startswith("T°"):
+                    continue
                 match = re.match(r"([A-H])(\d{1,2})", col)
                 if not match:
                     continue
@@ -259,16 +267,43 @@ if uploaded_files:
                 well_id = f"{row}{col_num}"
                 if row not in selected_rows or col_num not in selected_cols:
                     continue
-                colour = well_colours.get(well_id, "#CCCCCC")  # fallback grey
                 label = custom_labels.get(well_id, well_id)
+                label_to_wells.setdefault(label, []).append(col)
+
+            for label, replicate_cols in label_to_wells.items():
+                if not replicate_cols:
+                    continue
+                colour = well_colours.get(replicate_cols[0], "#CCCCCC")
+                values = df[replicate_cols].values  # shape: time x replicates
+                mean_vals = np.nanmean(values, axis=1)
+                std_vals = np.nanstd(values, axis=1)
                 x_vals = df.index if time_unit == "Minutes" else df.index / 60
+
+                # Mean trace
                 fig.add_trace(go.Scatter(
                     x=x_vals,
-                    y=df[col],
-                    name=label,
+                    y=mean_vals,
+                    name=label + " – Mean",
                     mode='lines',
-                    line=dict(color=colour)
+                    line=dict(color=colour),
+                    legendgroup=label,
+                    showlegend=True
                 ))
+
+                # SD ribbon
+                fig.add_trace(go.Scatter(
+                    x=np.concatenate([x_vals, x_vals[::-1]]),
+                    y=np.concatenate([mean_vals + std_vals, (mean_vals - std_vals)[::-1]]),
+                    fill='toself',
+                    fillcolor=f"rgba{mcolors.to_rgba(colour, alpha=0.2)}",
+                    line=dict(color='rgba(255,255,255,0)'),
+                    hoverinfo="skip",
+                    name=f"{label} ± SD",
+                    showlegend=False,
+                    legendgroup=label
+                ))
+        else:
+            # Original individual line plotting code (as you already have)
         
 
         fig.update_layout(
