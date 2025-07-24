@@ -52,12 +52,91 @@ def parse_growth_file(file, plate_num):
     df["Plate"] = f"Plate {plate_num}"
     return df.set_index("Time")
 
+def generate_preset_layout(strain, phages):
+    rows = list("ABCDEFGH")
+    cols = [str(c) for c in range(1, 13)]
+    layout_df = pd.DataFrame("", index=rows, columns=cols)
+
+    tech_reps = ["T1", "T2"]
+    batches = ["B1", "B2", "B3"]
+
+    for row_idx, row_letter in enumerate(rows):
+        phage_id = phages[row_idx // 2]
+        tech_rep = tech_reps[row_idx % 2]
+
+        # Columns 1–9 (MOI combinations)
+        well_values = []
+        for moi in ["MOI1", "MOI0.5", "MOI0.1"]:
+            for batch in batches:
+                label = f"{phage_id}_{moi}-{strain}_{batch}-{tech_rep}"
+                well_values.append(label)
+
+        # Columns 10–12 (specials)
+        if row_idx == 0:
+            well_values += [phage_id, "BROTH", f"{strain}_B1"]
+        elif row_idx == 1:
+            well_values += [phage_id, "VEHICLE", f"{strain}_B1"]
+        elif row_idx == 2:
+            well_values += [phage_id, "PAO1", "EMPTY"]
+        elif row_idx == 3:
+            well_values += [phage_id, "EMPTY", f"{strain}_B2"]
+        elif row_idx == 4:
+            well_values += [phage_id, "BROTH", f"{strain}_B2"]
+        elif row_idx == 5:
+            well_values += [phage_id, "VEHICLE", "EMPTY"]
+        elif row_idx == 6:
+            well_values += [phage_id, "PAO1", f"{strain}_B3"]
+        elif row_idx == 7:
+            well_values += [phage_id, "EMPTY", f"{strain}_B3"]
+
+        layout_df.loc[row_letter, :] = well_values
+
+    return layout_df
+
 if uploaded_files:
     all_data = []
+    all_layouts = {}  # Dict to store well label maps per plate
     all_summary = []
 
     for i, file in enumerate(uploaded_files):
         df = parse_growth_file(file, i + 1)
+        plate_name = f"Plate {i + 1}"
+        st.markdown(f"---\n### {plate_name} Layout Settings")
+
+        layout_mode = st.radio(
+            f"Layout Mode for {plate_name}",
+            ["Use preset layout", "Start with empty layout"],
+            horizontal=True,
+            key=f"layout_mode_{plate_name}"
+        )
+
+        host_strain = st.text_input(
+            f"{plate_name} - Bacterial Host Strain", value="PAO1", key=f"strain_{plate_name}"
+        )
+
+        phage_input = st.text_input(
+            f"{plate_name} - Phage(s) (comma-separated)", value="P1,P2,P3,P4", key=f"phages_{plate_name}"
+        )
+
+        phages = [p.strip() for p in phage_input.split(",") if p.strip()]
+        well_label_map = {}
+
+        if layout_mode == "Use preset layout" and len(phages) == 4:
+            layout_df = generate_preset_layout(host_strain, phages)
+            for row in layout_df.index:
+                for col in layout_df.columns:
+                    well = f"{row}{col}"
+                    label = layout_df.loc[row, col]
+                    well_label_map[well] = label
+
+            # Optional: show layout table
+            st.markdown(f"**{plate_name} - Auto-generated Layout Preview**")
+            st.dataframe(layout_df, use_container_width=True)
+        elif layout_mode == "Use preset layout":
+            st.warning(f"{plate_name}: You must enter exactly 4 phages for the preset layout.")
+
+        # Store layout
+        all_layouts[plate_name] = well_label_map
 
         if df.empty:
             st.warning(f"The file **{file.name}** could not be processed (empty or invalid data). Skipping.")
@@ -105,12 +184,14 @@ if uploaded_files:
 
         # Custom well labels for this plate only
         custom_labels = {}
+        layout_map = all_layouts.get(plate, {})
         with st.sidebar.expander(f"Custom Labels for {plate}"):
             for row in selected_rows:
                 for col_num in selected_cols:
                     well_id = f"{row}{col_num}"
+                    default_label = layout_map.get(well_id, well_id)
                     label_key = f"{plate}_{well_id}_label"
-                    label = st.text_input(f"{plate} - Label for {well_id}", value=well_id, key=label_key)
+                    label = st.text_input(f"{plate} - Label for {well_id}", value=default_label, key=label_key)
                     custom_labels[well_id] = label
 
         # Axis range override UI
@@ -157,45 +238,4 @@ if uploaded_files:
 
         st.plotly_chart(fig, use_container_width=True)
 
-    # Generalised Heatmap Visualisation for "Mean" and "SD"
-    metrics = ["Mean", "SD"]
-    fig, axes = plt.subplots(len(metrics), len(all_summary), figsize=(5 * len(all_summary), 5 * len(metrics)))
-
-    if len(all_summary) == 1:
-        axes = np.array([[axes[0]], [axes[1]]])  # Ensure 2D shape
-
-    for j, metric in enumerate(metrics):
-        for i, summary in enumerate(all_summary):
-            plate = summary["Plate"].iloc[0]
-            sub = summary[["Well", metric]]
-
-            # Dynamically extract row and column layout from wells
-            well_ids = sub["Well"].dropna().unique()
-            rows = sorted(set([w[0] for w in well_ids if re.match(r"^[A-Z]\d+$", w)]))
-            cols = sorted(set([int(re.search(r"\d+$", w).group()) for w in well_ids if re.match(r"^[A-Z]\d+$", w)]))
-
-            heatmap = pd.DataFrame(index=rows, columns=cols, dtype=float)
-
-            for _, row in sub.iterrows():
-                match = re.match(r"([A-Z])(\d{1,2})", row["Well"])
-                if match:
-                    r, c = match.groups()
-                    if r in heatmap.index and int(c) in heatmap.columns:
-                        heatmap.loc[r, int(c)] = row[metric]
-
-            heatmap.columns = heatmap.columns.astype(int)
-
-            sns.heatmap(
-                heatmap,
-                ax=axes[j][i],
-                cmap="rainbow_r",
-                annot=False,
-                cbar=True
-            )
-            axes[j][i].set_title(f"{plate} - {metric}")
-            axes[j][i].set_xlabel("Column")
-            axes[j][i].set_ylabel("Row")
-
-    plt.tight_layout()
-    st.subheader("Plate Summary Heatmaps")
-    st.pyplot(fig)
+    
