@@ -519,3 +519,28 @@ if any(selected_wells_per_plate.values()):
     )
 
     st.plotly_chart(fig, use_container_width=True)
+
+
+# === METADATA INTEGRATION EXAMPLE ===
+
+# === Optional Metadata Upload (insert near top of Streamlit app) ===
+st.sidebar.markdown("### Optional Metadata Upload")
+metadata_file = st.sidebar.file_uploader("Upload layout metadata (.txt)", type=["txt"])
+metadata_map = {}
+
+if metadata_file:
+    lines = metadata_file.read().decode("utf-8").splitlines()
+    for line in lines:
+        if line.strip():
+            parts = line.strip().split("\t")
+            if len(parts) == 2:
+                well, label = parts
+                metadata_map[well.strip()] = label.strip()
+# === End Metadata Upload Block ===
+
+# === USE THIS when assigning default labels in the plate layout ===
+# Replace the original default assignment with:
+default_label = metadata_map.get(well, layout_map.get(well, well))
+label = st.text_input(f"Label for {well}", value=default_label, key=f"{plate}_{well}_label")
+st.session_state[f"{plate}_{well}_label"] = label
+# === End Layout Assignment ===
