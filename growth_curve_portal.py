@@ -12,6 +12,27 @@ from io import StringIO
 import re
 import copy
 
+
+
+def parse_metadata_file(metadata_file):
+    try:
+        text = metadata_file.read().decode('utf-8')
+        lines = text.strip().splitlines()
+
+        # Auto-detect delimiter (comma, tab, or whitespace)
+        delimiters = [',', '\t', ' ']
+        for delim in delimiters:
+            parts = [line.split(delim) for line in lines]
+            if all(len(p) == 2 for p in parts[1:]):
+                well_map = {well.strip(): label.strip() for well, label in parts[1:]}
+                return well_map
+        raise ValueError("No suitable delimiter found or malformed rows in metadata.")
+    except Exception as e:
+        st.warning(f"Error parsing metadata file: {e}")
+        return {}
+
+
+
 st.set_page_config(layout="wide")
 st.title("Growth Curve Visualisation Portal v. 1.0")
 
