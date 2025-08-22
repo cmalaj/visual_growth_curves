@@ -299,8 +299,8 @@ if uploaded_files:
                     continue
                 # Use first well to determine color
                 colour = well_colours.get(replicate_cols[0], "#CCCCCC")
-                x_vals = df.index if time_unit == "Minutes" else df.index / 60
-                values = df[replicate_cols].values  # shape: time x replicates
+                x_vals = df_scaled.index if time_unit == "Minutes" else df_scaled.index / 60
+                values = df_scaled[replicate_cols].values
                 mean_vals = np.nanmean(values, axis=1)
                 std_vals = np.nanstd(values, axis=1)
 
@@ -350,7 +350,7 @@ if uploaded_files:
 
                 fig.add_trace(go.Scatter(
                     x=x_vals,
-                    y=df[col],
+                    y=df_scaled[col],
                     name=label,
                     mode='lines',
                     line=dict(color=colour)
