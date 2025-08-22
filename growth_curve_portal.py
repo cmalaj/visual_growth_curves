@@ -556,7 +556,7 @@ if all_data:  # Only run if data has been loaded
 
         st.plotly_chart(fig, use_container_width=True)
 
-#Bacterial growth threshold analysis
+# Bacterial growth threshold analysis
 if all_data:  # Only run if data has been loaded
     st.markdown("---")
     st.header("Growth Threshold Analysis")
@@ -570,16 +570,17 @@ if all_data:  # Only run if data has been loaded
         # Get well label map for this file
         layout = all_layouts.get(plate, {})
 
-        # 🔍 Offer manual control well selection via custom labels
+        # 🔍 Manual control well selection via custom labels
         st.subheader(f"{plate} – Bacterial Control Well Selection")
 
-        # Build list of label → well ID mappings for wells present in the DF
+        # Build list of label → label mappings (only for existing df columns)
         label_to_well = {}
-        for well, label in all_layouts.get(plate, {}).items():
+        for well, label in layout.items():
             full_key = f"{plate}_{well}_label"
             custom_label = st.session_state.get(full_key)
-            if custom_label and well in df.columns:
-                label_to_well[custom_label] = well
+
+            if custom_label and custom_label in df.columns:
+                label_to_well[custom_label] = custom_label
 
         if not label_to_well:
             st.warning(f"No valid labeled wells found for {plate}.")
@@ -589,7 +590,7 @@ if all_data:  # Only run if data has been loaded
         selected_control_labels = st.multiselect(
             f"Select bacterial control wells for {plate}",
             options=list(label_to_well.keys()),
-            default=[label for label in label_to_well if re.fullmatch(r".+_B[123]", label)]  # optional regex-based preselection
+            default=[label for label in label_to_well if re.fullmatch(r".+_B[123]", label)]
         )
 
         control_wells = [label_to_well[label] for label in selected_control_labels]
@@ -628,7 +629,7 @@ if all_data:  # Only run if data has been loaded
                 line=dict(dash="dash", color="red")
             )
 
-            # Optional: Mark intersection
+            # Mark intersection
             if cross_time is not None:
                 fig.add_trace(go.Scatter(
                     x=[cross_time],
