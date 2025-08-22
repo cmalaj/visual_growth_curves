@@ -365,7 +365,7 @@ if uploaded_files:
             legend_title="Well Label",
             margin=dict(l=50, r=50, t=50, b=50),
             xaxis=dict(range=[x_min, x_max]),
-            yaxis=dict(range=[y_min, y_max])
+            yaxis=dict(range=[0, y_max])
         )
 
         st.plotly_chart(fig, use_container_width=True)
