@@ -110,6 +110,9 @@ if uploaded_files:
             key=f"title_{plate_name}"
         )
 
+        plate_titles = st.session_state.setdefault("plate_titles", {})
+        plate_titles[plate_name] = custom_title
+
 
         st.markdown(f"---\n### {plate_name} Layout Settings")
 
@@ -343,8 +346,9 @@ if uploaded_files:
                 ))
 
         # Final plot layout + render
+        title = st.session_state["plate_titles"].get(plate, plate)
         fig.update_layout(
-            title=custom_title,
+            title=title,
             xaxis_title=f"Time ({time_unit})",
             yaxis_title="OD600",
             legend_title="Well Label",
