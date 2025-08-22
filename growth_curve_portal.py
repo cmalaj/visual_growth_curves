@@ -175,7 +175,7 @@ if uploaded_files:
     # Align all growth curves for comparison plot
     # -------------------------
     all_data_scaled = []
-    for df in all_data:
+    for df in data_source:
         df_scaled = df.copy()
         well_cols = df_scaled.filter(regex=r"^[A-H]\d{1,2}$").columns
         baseline_vals = df_scaled[well_cols].iloc[0]
@@ -461,7 +461,7 @@ if all_data:  # Only run if data has been loaded
             comp_x_max = st.number_input("X max", value=x_max_default, step=0.1, key="comp_xmax")
 
         with col2:
-            all_values = pd.concat([df.drop(columns=["Plate"], errors="ignore") for df in all_data], axis=1)
+            all_values = pd.concat([df.drop(columns=["Plate"], errors="ignore") for df in data_source], axis=1)
             y_min_default = all_values.min().min()
             y_max_default = all_values.max().max()
             comp_y_min = st.number_input("Y min (OD600)", value=y_min_default, step=0.1, key="comp_ymin")
@@ -523,7 +523,7 @@ if all_data:  # Only run if data has been loaded
         else:
             # Default: plot each trace individually
             for plate_name, well_list in selected_wells_per_plate.items():
-                df = next((d for d in all_data if d["Plate"].iloc[0] == plate_name), None)
+                df = next((d for d in data_source if d["Plate"].iloc[0] == plate_name), None)
                 if df is None:
                     continue
 
