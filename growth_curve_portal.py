@@ -359,164 +359,166 @@ if uploaded_files:
 # ========================
 # Comparison Plot Section
 # ========================
-st.markdown("---")
-st.header("Comparison Plot")
+if all_data:  # ✅ Only run if data has been loaded
+    st.markdown("---")
+    st.header("Comparison Plot")
 
-# Time unit selection for comparison plot
-comparison_time_unit = st.radio(
-    "Time Axis Unit for Comparison Plot",
-    options=["Minutes", "Hours"],
-    horizontal=True,
-    key="comparison_time_unit"
-)
-
-# ✅ NEW: Option to select same wells across all plates
-use_shared_selection = st.checkbox("Use same wells across all plates?", value=False)
-
-# Store selected wells per plate
-selected_wells_per_plate = {}
-
-st.subheader("Select wells to compare")
-
-if use_shared_selection:
-    # ✅ Shared well selector
-    shared_wells = st.multiselect(
-        "Select wells (applies to all plates)",
-        options=[f"{row}{col}" for row in "ABCDEFGH" for col in range(1, 13)],
-        help="These wells will be plotted from all uploaded plates.",
-        key="shared_well_selector"
+    # Time unit selection for comparison plot
+    comparison_time_unit = st.radio(
+        "Time Axis Unit for Comparison Plot",
+        options=["Minutes", "Hours"],
+        horizontal=True,
+        key="comparison_time_unit"
     )
-    show_mean_with_ribbon = st.checkbox(
-        "Show average ± SD for selected wells",
-        value=True,
-        help="Plots the average profile across all plates for each selected well with a shaded SD band"
-    )
-    # Assign selected wells to each plate
-    for df in all_data:
-        plate = df["Plate"].iloc[0]
-        wells_in_plate = [col for col in df.columns if re.match(r"^[A-H]\d{1,2}$", col)]
-        valid_shared = [w for w in shared_wells if w in wells_in_plate]
-        if valid_shared:
-            selected_wells_per_plate[plate] = valid_shared
 
-else:
-    # 🔁 Per-plate multiselects
-    for df in all_data:
-        plate = df["Plate"].iloc[0]
-        wells = [col for col in df.columns if re.match(r"^[A-H]\d{1,2}$", col)]
 
-        selected = st.multiselect(
-            f"{plate} – Select wells to compare",
-            options=wells,
-            key=f"compare_select_{plate}"
+    # ✅ NEW: Option to select same wells across all plates
+    use_shared_selection = st.checkbox("Use same wells across all plates?", value=False)
+
+    # Store selected wells per plate
+    selected_wells_per_plate = {}
+
+    st.subheader("Select wells to compare")
+
+    if use_shared_selection:
+        # ✅ Shared well selector
+        shared_wells = st.multiselect(
+            "Select wells (applies to all plates)",
+            options=[f"{row}{col}" for row in "ABCDEFGH" for col in range(1, 13)],
+            help="These wells will be plotted from all uploaded plates.",
+            key="shared_well_selector"
         )
-
-        if selected:
-            selected_wells_per_plate[plate] = selected
-
-# Axis range control
-with st.expander("Adjust axes for comparison plot"):
-    col1, col2 = st.columns(2)
-
-    with col1:
-        all_times = pd.concat([pd.Series(df.index) for df in all_data])
-        x_min_default = all_times.min() if comparison_time_unit == "Minutes" else all_times.min() / 60
-        x_max_default = all_times.max() if comparison_time_unit == "Minutes" else all_times.max() / 60
-        comp_x_min = st.number_input("X min", value=x_min_default, step=0.1, key="comp_xmin")
-        comp_x_max = st.number_input("X max", value=x_max_default, step=0.1, key="comp_xmax")
-
-    with col2:
-        all_values = pd.concat([df.drop(columns=["Plate"], errors="ignore") for df in all_data], axis=1)
-        y_min_default = all_values.min().min()
-        y_max_default = all_values.max().max()
-        comp_y_min = st.number_input("Y min (OD600)", value=y_min_default, step=0.1, key="comp_ymin")
-        comp_y_max = st.number_input("Y max (OD600)", value=y_max_default, step=0.1, key="comp_ymax")
-
-# Plot if any wells are selected
-if any(selected_wells_per_plate.values()):
-    fig = go.Figure()
-
-    if use_shared_selection and show_mean_with_ribbon:
-        # For each shared well, collect matching data across plates
-        for well_id in shared_wells:
-            time_grid = None
-            all_profiles = []
-
-            for df in all_data:
-                if well_id in df.columns:
-                    x_vals = df.index if comparison_time_unit == "Minutes" else df.index / 60
-                    y_vals = df[well_id]
-
-                    if time_grid is None:
-                        time_grid = x_vals
-                    all_profiles.append(y_vals.values)
-
-            if all_profiles:
-                y_array = np.array(all_profiles)
-                mean_vals = np.nanmean(y_array, axis=0)
-                std_vals = np.nanstd(y_array, axis=0)
-
-                colour = well_colours.get(well_id, "#CCCCCC")
-
-                # Convert matplotlib RGBA to valid Plotly 'rgba(...)' string
-                rgba = mcolors.to_rgba(colour, alpha=0.2)
-                fillcolor = f"rgba({int(rgba[0]*255)}, {int(rgba[1]*255)}, {int(rgba[2]*255)}, {rgba[3]})"
-
-                # Mean line
-                fig.add_trace(go.Scatter(
-                    x=time_grid,
-                    y=mean_vals,
-                    mode='lines',
-                    name=f"{well_id} – Mean",
-                    line=dict(color=colour, width=2),
-                    legendgroup=well_id,         # 🔗 Link to the same group
-                    showlegend=True
-                ))
-
-                # Shaded SD ribbon
-                fig.add_trace(go.Scatter(
-                x=np.concatenate([time_grid, time_grid[::-1]]),
-                y=np.concatenate([mean_vals + std_vals, (mean_vals - std_vals)[::-1]]),
-                fill='toself',
-                fillcolor=fillcolor,
-                line=dict(color='rgba(255,255,255,0)'),
-                hoverinfo="skip",
-                showlegend=False,
-                legendgroup=well_id  # Ribbon toggles with mean line
-            ))
+        show_mean_with_ribbon = st.checkbox(
+            "Show average ± SD for selected wells",
+            value=True,
+            help="Plots the average profile across all plates for each selected well with a shaded SD band"
+        )
+        # Assign selected wells to each plate
+        for df in all_data:
+            plate = df["Plate"].iloc[0]
+            wells_in_plate = [col for col in df.columns if re.match(r"^[A-H]\d{1,2}$", col)]
+            valid_shared = [w for w in shared_wells if w in wells_in_plate]
+            if valid_shared:
+                selected_wells_per_plate[plate] = valid_shared
 
     else:
-        # Default: plot each trace individually
-        for plate_name, well_list in selected_wells_per_plate.items():
-            df = next((d for d in all_data if d["Plate"].iloc[0] == plate_name), None)
-            if df is None:
-                continue
+        # 🔁 Per-plate multiselects
+        for df in all_data:
+            plate = df["Plate"].iloc[0]
+            wells = [col for col in df.columns if re.match(r"^[A-H]\d{1,2}$", col)]
 
-            for well_id in well_list:
-                if well_id not in df.columns:
-                    continue
+            selected = st.multiselect(
+                f"{plate} – Select wells to compare",
+                options=wells,
+                key=f"compare_select_{plate}"
+            )
 
-                custom_key = f"{plate_name}_{well_id}_label"
-                label = st.session_state.get(custom_key, f"{plate_name} - {well_id}")
-                colour = well_colours.get(well_id, "#CCCCCC")
-                x_vals = df.index if comparison_time_unit == "Minutes" else df.index / 60
+            if selected:
+                selected_wells_per_plate[plate] = selected
 
-                fig.add_trace(go.Scatter(
-                    x=x_vals,
-                    y=df[well_id],
-                    name=label,
-                    mode='lines',
-                    line=dict(color=colour)
+    # Axis range control
+    with st.expander("Adjust axes for comparison plot"):
+        col1, col2 = st.columns(2)
+
+        with col1:
+            all_times = pd.concat([pd.Series(df.index) for df in all_data])
+            x_min_default = all_times.min() if comparison_time_unit == "Minutes" else all_times.min() / 60
+            x_max_default = all_times.max() if comparison_time_unit == "Minutes" else all_times.max() / 60
+            comp_x_min = st.number_input("X min", value=x_min_default, step=0.1, key="comp_xmin")
+            comp_x_max = st.number_input("X max", value=x_max_default, step=0.1, key="comp_xmax")
+
+        with col2:
+            all_values = pd.concat([df.drop(columns=["Plate"], errors="ignore") for df in all_data], axis=1)
+            y_min_default = all_values.min().min()
+            y_max_default = all_values.max().max()
+            comp_y_min = st.number_input("Y min (OD600)", value=y_min_default, step=0.1, key="comp_ymin")
+            comp_y_max = st.number_input("Y max (OD600)", value=y_max_default, step=0.1, key="comp_ymax")
+
+    # Plot if any wells are selected
+    if any(selected_wells_per_plate.values()):
+        fig = go.Figure()
+
+        if use_shared_selection and show_mean_with_ribbon:
+            # For each shared well, collect matching data across plates
+            for well_id in shared_wells:
+                time_grid = None
+                all_profiles = []
+
+                for df in all_data:
+                    if well_id in df.columns:
+                        x_vals = df.index if comparison_time_unit == "Minutes" else df.index / 60
+                        y_vals = df[well_id]
+
+                        if time_grid is None:
+                            time_grid = x_vals
+                        all_profiles.append(y_vals.values)
+
+                if all_profiles:
+                    y_array = np.array(all_profiles)
+                    mean_vals = np.nanmean(y_array, axis=0)
+                    std_vals = np.nanstd(y_array, axis=0)
+
+                    colour = well_colours.get(well_id, "#CCCCCC")
+
+                    # Convert matplotlib RGBA to valid Plotly 'rgba(...)' string
+                    rgba = mcolors.to_rgba(colour, alpha=0.2)
+                    fillcolor = f"rgba({int(rgba[0]*255)}, {int(rgba[1]*255)}, {int(rgba[2]*255)}, {rgba[3]})"
+
+                    # Mean line
+                    fig.add_trace(go.Scatter(
+                        x=time_grid,
+                        y=mean_vals,
+                        mode='lines',
+                        name=f"{well_id} – Mean",
+                        line=dict(color=colour, width=2),
+                        legendgroup=well_id,         # 🔗 Link to the same group
+                        showlegend=True
+                    ))
+
+                    # Shaded SD ribbon
+                    fig.add_trace(go.Scatter(
+                    x=np.concatenate([time_grid, time_grid[::-1]]),
+                    y=np.concatenate([mean_vals + std_vals, (mean_vals - std_vals)[::-1]]),
+                    fill='toself',
+                    fillcolor=fillcolor,
+                    line=dict(color='rgba(255,255,255,0)'),
+                    hoverinfo="skip",
+                    showlegend=False,
+                    legendgroup=well_id  # Ribbon toggles with mean line
                 ))
 
-    fig.update_layout(
-        title="Overlay Comparison Plot",
-        xaxis_title=f"Time ({comparison_time_unit})",
-        yaxis_title="OD600",
-        legend_title="Well Label",
-        margin=dict(l=50, r=50, t=50, b=50),
-        xaxis=dict(range=[comp_x_min, comp_x_max]),
-        yaxis=dict(range=[comp_y_min, comp_y_max])
-    )
+        else:
+            # Default: plot each trace individually
+            for plate_name, well_list in selected_wells_per_plate.items():
+                df = next((d for d in all_data if d["Plate"].iloc[0] == plate_name), None)
+                if df is None:
+                    continue
 
-    st.plotly_chart(fig, use_container_width=True)
+                for well_id in well_list:
+                    if well_id not in df.columns:
+                        continue
+
+                    custom_key = f"{plate_name}_{well_id}_label"
+                    label = st.session_state.get(custom_key, f"{plate_name} - {well_id}")
+                    colour = well_colours.get(well_id, "#CCCCCC")
+                    x_vals = df.index if comparison_time_unit == "Minutes" else df.index / 60
+
+                    fig.add_trace(go.Scatter(
+                        x=x_vals,
+                        y=df[well_id],
+                        name=label,
+                        mode='lines',
+                        line=dict(color=colour)
+                    ))
+
+        fig.update_layout(
+            title="Overlay Comparison Plot",
+            xaxis_title=f"Time ({comparison_time_unit})",
+            yaxis_title="OD600",
+            legend_title="Well Label",
+            margin=dict(l=50, r=50, t=50, b=50),
+            xaxis=dict(range=[comp_x_min, comp_x_max]),
+            yaxis=dict(range=[comp_y_min, comp_y_max])
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
