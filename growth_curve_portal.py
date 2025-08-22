@@ -570,17 +570,32 @@ if all_data:  # Only run if data has been loaded
         # Get well label map for this file
         layout = all_layouts.get(plate, {})
 
-        # ✅ Find all wells with labels like PAE45_B1, PAE45_B2, PAE45_B3
-        control_labels = [
-            label for label in layout.values()
-            if re.fullmatch(r".+_B[123]", str(label))
-        ]
+        # 🔍 Offer manual control well selection via custom labels
+        st.subheader(f"{plate} – Bacterial Control Well Selection")
 
-        # ✅ Ensure they actually exist in the dataframe
-        control_wells = [label for label in control_labels if label in df.columns]
+        # Build list of label → well ID mappings for wells present in the DF
+        label_to_well = {}
+        for well, label in all_layouts.get(plate, {}).items():
+            full_key = f"{plate}_{well}_label"
+            custom_label = st.session_state.get(full_key)
+            if custom_label and well in df.columns:
+                label_to_well[custom_label] = well
+
+        if not label_to_well:
+            st.warning(f"No valid labeled wells found for {plate}.")
+            continue
+
+        # Multiselect control for choosing bacterial control wells
+        selected_control_labels = st.multiselect(
+            f"Select bacterial control wells for {plate}",
+            options=list(label_to_well.keys()),
+            default=[label for label in label_to_well if re.fullmatch(r".+_B[123]", label)]  # optional regex-based preselection
+        )
+
+        control_wells = [label_to_well[label] for label in selected_control_labels]
 
         if not control_wells:
-            st.warning(f"No bacterial control wells detected in {plate}. Skipping.")
+            st.warning(f"No bacterial control wells selected for {plate}. Skipping.")
             continue
 
         # Calculate mean across biological replicates
