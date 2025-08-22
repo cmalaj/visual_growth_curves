@@ -257,6 +257,14 @@ if uploaded_files:
             value=False,
             key=f"group_reps_{plate}"
         )
+        # Align all wells to start at OD600 = 0.0001
+        baseline_vals = df.filter(regex=r"^[A-H]\d{1,2}$").iloc[0]
+        df_scaled = df.copy()
+        for col in baseline_vals.index:
+            baseline = baseline_vals[col]
+            if pd.notna(baseline):
+                df_scaled[col] = df[col] - baseline + 0.0001
+        
         # Build plot
         fig = go.Figure()
 
