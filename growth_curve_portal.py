@@ -175,7 +175,7 @@ if uploaded_files:
     # Align all growth curves for comparison plot
     # -------------------------
     all_data_scaled = []
-    for df in data_source:
+    for df in all_data:
         df_scaled = df.copy()
         well_cols = df_scaled.filter(regex=r"^[A-H]\d{1,2}$").columns
         baseline_vals = df_scaled[well_cols].iloc[0]
