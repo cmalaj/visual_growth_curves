@@ -568,7 +568,7 @@ if all_data:  # Only run if data has been loaded
         fig = go.Figure()
 
         # Get well label map for this file
-        layout = all_layouts.get(file.name, {})
+        layout = all_layouts.get(plate, {})
 
         # ✅ Find all wells with labels like PAE45_B1, PAE45_B2, PAE45_B3
         control_labels = [
@@ -601,7 +601,7 @@ if all_data:  # Only run if data has been loaded
         for multiplier in thresholds:
             thresh_val = baseline * multiplier
             cross_idx = np.argmax(mean_vals.values >= thresh_val)
-            cross_time = time_vals[cross_idx] if cross_idx > 0 else None
+            cross_time = time_vals[cross_idx] if cross_idx < len(time_vals) else None
 
             # Horizontal threshold line
             fig.add_shape(
