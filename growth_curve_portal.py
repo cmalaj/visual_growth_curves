@@ -565,8 +565,17 @@ for idx, df in enumerate(all_data_scaled):
     plate = df["Plate"].iloc[0]
     fig = go.Figure()
 
-    # ✅ Extract control bacterial wells labelled like "{strain}_BX"
-    control_wells = [col for col in df.columns if re.match(r".*_B\d+$", col)]
+    # Get well label map for this file
+    layout = all_layouts.get(file.name, {})
+
+    # ✅ Find all wells with labels like PAE45_B1, PAE45_B2, PAE45_B3
+    control_labels = [
+        label for label in layout.values()
+        if re.fullmatch(r".+_B[123]", str(label))
+    ]
+
+    # ✅ Ensure they actually exist in the dataframe
+    control_wells = [label for label in control_labels if label in df.columns]
 
     if not control_wells:
         st.warning(f"No bacterial control wells detected in {plate}. Skipping.")
