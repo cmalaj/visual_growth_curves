@@ -556,79 +556,81 @@ if all_data:  # Only run if data has been loaded
 
         st.plotly_chart(fig, use_container_width=True)
 
-st.markdown("---")
-st.header("Growth Threshold Analysis")
+#Bacterial growth threshold analysis
+if all_data:  # Only run if data has been loaded
+    st.markdown("---")
+    st.header("Growth Threshold Analysis")
 
-thresholds = [10, 20, 50, 100]
+    thresholds = [10, 20, 50, 100]
 
-for idx, df in enumerate(all_data_scaled):
-    plate = df["Plate"].iloc[0]
-    fig = go.Figure()
+    for idx, df in enumerate(all_data_scaled):
+        plate = df["Plate"].iloc[0]
+        fig = go.Figure()
 
-    # Get well label map for this file
-    layout = all_layouts.get(file.name, {})
+        # Get well label map for this file
+        layout = all_layouts.get(file.name, {})
 
-    # ✅ Find all wells with labels like PAE45_B1, PAE45_B2, PAE45_B3
-    control_labels = [
-        label for label in layout.values()
-        if re.fullmatch(r".+_B[123]", str(label))
-    ]
+        # ✅ Find all wells with labels like PAE45_B1, PAE45_B2, PAE45_B3
+        control_labels = [
+            label for label in layout.values()
+            if re.fullmatch(r".+_B[123]", str(label))
+        ]
 
-    # ✅ Ensure they actually exist in the dataframe
-    control_wells = [label for label in control_labels if label in df.columns]
+        # ✅ Ensure they actually exist in the dataframe
+        control_wells = [label for label in control_labels if label in df.columns]
 
-    if not control_wells:
-        st.warning(f"No bacterial control wells detected in {plate}. Skipping.")
-        continue
+        if not control_wells:
+            st.warning(f"No bacterial control wells detected in {plate}. Skipping.")
+            continue
 
-    # Calculate mean across biological replicates
-    mean_vals = df[control_wells].mean(axis=1)
-    baseline = mean_vals.iloc[0]
-    time_vals = df.index
+        # Calculate mean across biological replicates
+        mean_vals = df[control_wells].mean(axis=1)
+        baseline = mean_vals.iloc[0]
+        time_vals = df.index
 
-    # Plot mean growth curve
-    fig.add_trace(go.Scatter(
-        x=time_vals,
-        y=mean_vals,
-        name="Mean Bacterial Growth",
-        mode="lines",
-        line=dict(color="blue", width=3)
-    ))
+        # Plot mean growth curve
+        fig.add_trace(go.Scatter(
+            x=time_vals,
+            y=mean_vals,
+            name="Mean Bacterial Growth",
+            mode="lines",
+            line=dict(color="blue", width=3)
+        ))
 
-    # Add threshold lines and crossing point annotations
-    for multiplier in thresholds:
-        thresh_val = baseline * multiplier
-        cross_idx = np.argmax(mean_vals.values >= thresh_val)
-        cross_time = time_vals[cross_idx] if cross_idx > 0 else None
+        # Add threshold lines and crossing point annotations
+        for multiplier in thresholds:
+            thresh_val = baseline * multiplier
+            cross_idx = np.argmax(mean_vals.values >= thresh_val)
+            cross_time = time_vals[cross_idx] if cross_idx > 0 else None
 
-        # Horizontal threshold line
-        fig.add_shape(
-            type="line",
-            x0=time_vals.min(),
-            x1=time_vals.max(),
-            y0=thresh_val,
-            y1=thresh_val,
-            line=dict(dash="dash", color="red")
+            # Horizontal threshold line
+            fig.add_shape(
+                type="line",
+                x0=time_vals.min(),
+                x1=time_vals.max(),
+                y0=thresh_val,
+                y1=thresh_val,
+                line=dict(dash="dash", color="red")
+            )
+
+            # Optional: Mark intersection
+            if cross_time is not None:
+                fig.add_trace(go.Scatter(
+                    x=[cross_time],
+                    y=[thresh_val],
+                    mode="markers+text",
+                    marker=dict(color="red", size=6),
+                    text=[f"{multiplier}× @ {cross_time:.1f} min"],
+                    textposition="top center",
+                    showlegend=False
+                ))
+
+        fig.update_layout(
+            title=f"{st.session_state['plate_titles'].get(plate, plate)} – Threshold Crossings",
+            xaxis_title="Time (minutes)",
+            yaxis_title="Mean OD600",
+            yaxis=dict(range=[0, mean_vals.max() * 1.1]),
+            margin=dict(l=50, r=50, t=50, b=50)
         )
 
-        # Optional: Mark intersection
-        if cross_time is not None:
-            fig.add_trace(go.Scatter(
-                x=[cross_time],
-                y=[thresh_val],
-                mode="markers+text",
-                marker=dict(color="red", size=6),
-                text=[f"{multiplier}× @ {cross_time:.1f} min"],
-                textposition="top center",
-                showlegend=False
-            ))
-
-    fig.update_layout(
-        title=f"{st.session_state['plate_titles'].get(plate, plate)} – Threshold Crossings",
-        xaxis_title="Time (minutes)",
-        yaxis_title="Mean OD600",
-        yaxis=dict(range=[0, mean_vals.max() * 1.1]),
-        margin=dict(l=50, r=50, t=50, b=50)
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True)
