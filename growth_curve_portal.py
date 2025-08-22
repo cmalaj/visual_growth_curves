@@ -171,6 +171,20 @@ if uploaded_files:
         summary["Plate"] = f"Plate {i + 1}"
         all_summary.append(summary)
 
+    # -------------------------
+    # Align all growth curves for comparison plot
+    # -------------------------
+    all_data_scaled = []
+    for df in all_data:
+        df_scaled = df.copy()
+        well_cols = df_scaled.filter(regex=r"^[A-H]\d{1,2}$").columns
+        baseline_vals = df_scaled[well_cols].iloc[0]
+        for col in well_cols:
+            baseline = baseline_vals[col]
+            if pd.notna(baseline):
+                df_scaled[col] = df_scaled[col] - baseline + 0.0001
+        all_data_scaled.append(df_scaled)
+
     # Sidebar: Time-series well selection controls
     st.sidebar.header("Time-Series Controls")
 
@@ -374,7 +388,7 @@ if uploaded_files:
 # ========================
 # Comparison Plot Section
 # ========================
-if all_data:  # ✅ Only run if data has been loaded
+if all_data:  # Only run if data has been loaded
     st.markdown("---")
     st.header("Comparison Plot")
 
@@ -387,8 +401,12 @@ if all_data:  # ✅ Only run if data has been loaded
     )
 
 
-    # ✅ NEW: Option to select same wells across all plates
+    # NEW: Option to select same wells across all plates
     use_shared_selection = st.checkbox("Use same wells across all plates?", value=False)
+    
+    # Apply alignment
+    apply_alignment = st.checkbox("Align curves to start at OD600 = 0.0001", value=True)
+    data_source = all_data_scaled if apply_alignment else all_data
 
     # Store selected wells per plate
     selected_wells_per_plate = {}
@@ -396,7 +414,7 @@ if all_data:  # ✅ Only run if data has been loaded
     st.subheader("Select wells to compare")
 
     if use_shared_selection:
-        # ✅ Shared well selector
+        # Shared well selector
         shared_wells = st.multiselect(
             "Select wells (applies to all plates)",
             options=[f"{row}{col}" for row in "ABCDEFGH" for col in range(1, 13)],
@@ -409,7 +427,7 @@ if all_data:  # ✅ Only run if data has been loaded
             help="Plots the average profile across all plates for each selected well with a shaded SD band"
         )
         # Assign selected wells to each plate
-        for df in all_data:
+        for df in data_source:
             plate = df["Plate"].iloc[0]
             wells_in_plate = [col for col in df.columns if re.match(r"^[A-H]\d{1,2}$", col)]
             valid_shared = [w for w in shared_wells if w in wells_in_plate]
@@ -417,8 +435,8 @@ if all_data:  # ✅ Only run if data has been loaded
                 selected_wells_per_plate[plate] = valid_shared
 
     else:
-        # 🔁 Per-plate multiselects
-        for df in all_data:
+        # Per-plate multiselects
+        for df in data_source:
             plate = df["Plate"].iloc[0]
             wells = [col for col in df.columns if re.match(r"^[A-H]\d{1,2}$", col)]
 
