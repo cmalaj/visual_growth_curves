@@ -104,6 +104,9 @@ if uploaded_files:
         plate_name = f"Plate {i + 1}"
         filename = file.name
         default_title = filename or plate_name
+
+        st.markdown(f"---\n### {plate_name} Layout Settings")
+
         custom_title = st.text_input(
             f"Custom Title for {plate_name}",
             value=default_title,
@@ -114,7 +117,7 @@ if uploaded_files:
         plate_titles[plate_name] = custom_title
 
 
-        st.markdown(f"---\n### {plate_name} Layout Settings")
+        
 
         layout_mode = st.radio(
             f"Layout Mode for {plate_name}",
