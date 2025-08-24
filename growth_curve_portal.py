@@ -603,22 +603,23 @@ if all_data:  # Only run if data has been loaded
             cross_idx = np.argmax(mean_vals.values >= thresh_val)
             cross_time = time_vals[cross_idx] if cross_idx < len(time_vals) else None
 
-            fig.add_shape(
-                type="line",
-                x0=time_vals.min(),
-                x1=time_vals.max(),
-                y0=thresh_val,
-                y1=thresh_val,
-                line=dict(dash="dash", color="red")
-            )
-
+            # 🔄 Replace horizontal with vertical threshold line
             if cross_time is not None:
+                fig.add_shape(
+                    type="line",
+                    x0=cross_time,
+                    x1=cross_time,
+                    y0=0,
+                    y1=mean_vals.max() * 1.1,
+                    line=dict(dash="dash", color="red")
+                )
+
                 fig.add_trace(go.Scatter(
                     x=[cross_time],
                     y=[thresh_val],
                     mode="markers+text",
                     marker=dict(color="red", size=6),
-                    text=[f"{multiplier}× @ {cross_time:.1f} min"],
+                    text=[f"{multiplier}×"],
                     textposition="top center",
                     showlegend=False
                 ))
