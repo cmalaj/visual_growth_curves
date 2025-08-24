@@ -574,9 +574,10 @@ if all_data:  # Only run if data has been loaded
         st.subheader(f"{plate} – Select Bacterial Control Wells by Position")
 
         selected_positions = st.multiselect(
-            f"Choose control well positions (e.g. A10, B11) for {plate}",
+            f"Choose control well positions (e.g. A12, B11) for {plate}",
             options=candidate_wells,
-            default=[w for w in candidate_wells if re.fullmatch(r"[A-H](10|11|12)", w)]  # Default guess: columns 10–12
+            preferred_default_wells = ["A12", "B12", "D12", "E12", "G12", "H12"]
+            default = [w for w in preferred_default_wells if w in candidate_wells]
         )
 
         if not selected_positions:
