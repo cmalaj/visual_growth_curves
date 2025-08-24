@@ -573,11 +573,14 @@ if all_data:  # Only run if data has been loaded
 
         st.subheader(f"{plate} – Select Bacterial Control Wells by Position")
 
+        # Default to specific known positions if they exist
+        preferred_default_wells = ["A12", "B12", "D12", "E12", "G12", "H12"]
+        default = [w for w in preferred_default_wells if w in candidate_wells]
+
         selected_positions = st.multiselect(
             f"Choose control well positions (e.g. A12, B11) for {plate}",
             options=candidate_wells,
-            preferred_default_wells = ["A12", "B12", "D12", "E12", "G12", "H12"]
-            default = [w for w in preferred_default_wells if w in candidate_wells]
+            default = default
         )
 
         if not selected_positions:
