@@ -557,6 +557,7 @@ if all_data:  # Only run if data has been loaded
         st.plotly_chart(fig, use_container_width=True)
 
 # Bacterial growth threshold analysis
+# Bacterial growth threshold analysis
 if all_data:  # Only run if data has been loaded
     st.markdown("---")
     st.header("Growth Threshold Analysis")
@@ -567,40 +568,23 @@ if all_data:  # Only run if data has been loaded
         plate = df["Plate"].iloc[0]
         fig = go.Figure()
 
-        # Get well label map for this file
-        layout = all_layouts.get(plate, {})
+        # Fetch all well positions available in the dataframe (excluding metadata columns)
+        candidate_wells = [col for col in df.columns if re.fullmatch(r"[A-H]1[0-2]?|[A-H][1-9]", col)]
 
-        # 🔍 Manual control well selection via custom labels
-        st.subheader(f"{plate} – Bacterial Control Well Selection")
+        st.subheader(f"{plate} – Select Bacterial Control Wells by Position")
 
-        # Build list of label → label mappings (only for existing df columns)
-        label_to_well = {}
-        for well, label in layout.items():
-            full_key = f"{plate}_{well}_label"
-            custom_label = st.session_state.get(full_key)
-
-            if custom_label and custom_label in df.columns:
-                label_to_well[custom_label] = custom_label
-
-        if not label_to_well:
-            st.warning(f"No valid labeled wells found for {plate}.")
-            continue
-
-        # Multiselect control for choosing bacterial control wells
-        selected_control_labels = st.multiselect(
-            f"Select bacterial control wells for {plate}",
-            options=list(label_to_well.keys()),
-            default=[label for label in label_to_well if re.fullmatch(r".+_B[123]", label)]
+        selected_positions = st.multiselect(
+            f"Choose control well positions (e.g. A10, B11) for {plate}",
+            options=candidate_wells,
+            default=[w for w in candidate_wells if re.fullmatch(r"[A-H](10|11|12)", w)]  # Default guess: columns 10–12
         )
 
-        control_wells = [label_to_well[label] for label in selected_control_labels]
-
-        if not control_wells:
-            st.warning(f"No bacterial control wells selected for {plate}. Skipping.")
+        if not selected_positions:
+            st.warning(f"No control well positions selected for {plate}. Skipping.")
             continue
 
-        # Calculate mean across biological replicates
-        mean_vals = df[control_wells].mean(axis=1)
+        # Calculate mean across selected wells
+        mean_vals = df[selected_positions].mean(axis=1)
         baseline = mean_vals.iloc[0]
         time_vals = df.index
 
@@ -619,7 +603,6 @@ if all_data:  # Only run if data has been loaded
             cross_idx = np.argmax(mean_vals.values >= thresh_val)
             cross_time = time_vals[cross_idx] if cross_idx < len(time_vals) else None
 
-            # Horizontal threshold line
             fig.add_shape(
                 type="line",
                 x0=time_vals.min(),
@@ -629,7 +612,6 @@ if all_data:  # Only run if data has been loaded
                 line=dict(dash="dash", color="red")
             )
 
-            # Mark intersection
             if cross_time is not None:
                 fig.add_trace(go.Scatter(
                     x=[cross_time],
