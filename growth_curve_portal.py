@@ -502,7 +502,7 @@ if all_data:
         #st.plotly_chart(fig, use_container_width=True, key=f"growth_plot_base_{plate}_{idx}")
 
         # -------------------------
-        # ΔAUC Well Grid Section
+        # ΔAUC Well Grid Section (Inline HTML)
         # -------------------------
         if cross_time is not None:
             valid_mask = time_vals <= cross_time
@@ -523,86 +523,64 @@ if all_data:
 
             delta_auc_grid = delta_auc_grid.apply(pd.to_numeric)
 
-            # Set up color normalization and colormap
+            # Setup colourmap
             norm = mcolors.TwoSlopeNorm(vcenter=0, vmin=delta_auc_grid.min().min(), vmax=delta_auc_grid.max().max())
             cmap = cm.get_cmap("coolwarm_r")
 
             st.subheader(f"{plate} – ΔAUC Well Grid (up to {threshold_to_use}×)")
 
-            # Track selected wells in session state
-            session_key = f"selected_wells_{plate}_{idx}"
-            if session_key not in st.session_state:
-                st.session_state[session_key] = []
+            # 🧠 Track selected wells in session_state (for later)
+            html_well_key = f"html_selected_wells_{plate}_{idx}"
+            if html_well_key not in st.session_state:
+                st.session_state[html_well_key] = []
 
-            selected_wells = st.session_state[session_key]
-
-            # Inject CSS for compact button styling
-            st.markdown("""
-            <style>
-            /* Remove spacing between vertical block rows */
-            div[data-testid="stVerticalBlock"] > div {
-                margin-bottom: 0rem !important;
-                padding-bottom: 0rem !important;
-            }
-
-            /* Tighten spacing between columns */
-            div[data-testid="column"] {
-                padding: 0rem !important;
-                margin: 0rem !important;
-            }
-
-            /* Compact button layout globally */
-            div[data-testid="stButton"] > button {
-                padding: 2px 4px !important;
-                font-size: 11px !important;
-                height: 22px !important;
-                width: 100% !important;
-                margin: 0px !important;
-                line-height: 1.1 !important;
-                border: 1px solid #444 !important;
-                font-weight: 600;
-            }
-
-            /* Shrink row container spacing */
-            section.main > div > div > div > div {
-                gap: 0rem !important;
-            }
-            </style>
-            """, unsafe_allow_html=True)
-
-            # Render buttons in an 8x12 grid (A–H x 1–12)
+            # 🧱 Render compact HTML table with buttons
+            html = "<table style='border-spacing: 1px; line-height: 1.1;'>"
             for row in list("ABCDEFGH"):
-                cols = st.columns(12)
-                for col_idx, col_num in enumerate(range(1, 13)):
-                    well_id = f"{row}{col_num}"
-                    delta = delta_auc_grid.loc[row, str(col_num)]
-
+                html += "<tr>"
+                for col in range(1, 13):
+                    well_id = f"{row}{col}"
+                    delta = delta_auc_grid.loc[row, str(col)]
                     if pd.isna(delta):
-                        cols[col_idx].write(" ")
+                        html += "<td></td>"
                         continue
-
                     colour = mcolors.to_hex(cmap(norm(delta)))
-                    button_key = f"{plate}_{well_id}_{idx}"
+                    html += f"""
+                        <td>
+                            <form action="" method="post">
+                                <button name="well_button" value="{well_id}" style="
+                                    background-color: {colour};
+                                    color: black;
+                                    border: 1px solid #333;
+                                    font-size: 11px;
+                                    width: 32px;
+                                    height: 22px;
+                                    padding: 0;
+                                    margin: 0;
+                                    font-weight: bold;
+                                " title="ΔAUC: {delta:.2f}">{well_id}</button>
+                            </form>
+                        </td>
+                    """
+                html += "</tr>"
+            html += "</table>"
 
-                    # Inject per-button style BEFORE rendering the button
-                    st.markdown(f"""
-                        <style>
-                            div[data-testid="stButton"] > button:has(span:contains('{well_id}')) {{
-                                background-color: {colour};
-                                color: black;
-                            }}
-                        </style>
-                    """, unsafe_allow_html=True)
+            # Render the table
+            st.markdown(html, unsafe_allow_html=True)
 
-                    # Render the button
-                    if cols[col_idx].button(well_id, key=button_key, help=f"ΔAUC: {delta:.2f}"):
-                        if well_id in selected_wells:
-                            selected_wells.remove(well_id)
-                        else:
-                            selected_wells.append(well_id)
+            # Handle interaction
+            if "well_button" in st.session_state:
+                clicked = st.session_state.well_button
+                selected_wells = st.session_state[html_well_key]
+                if clicked in selected_wells:
+                    selected_wells.remove(clicked)
+                else:
+                    selected_wells.append(clicked)
+                st.session_state[html_well_key] = selected_wells
+                del st.session_state["well_button"]  # Reset after handling
 
-            # Add selected curves to plot
-            for well in selected_wells:
+            # 🎯 Add selected curves to plot
+            for well in st.session_state[html_well_key]:
                 if well in df.columns:
                     fig.add_trace(go.Scatter(
                         x=time_vals,
@@ -612,7 +590,6 @@ if all_data:
                         line=dict(dash="dot", width=2)
                     ))
 
-            # Re-render with updated selections
             st.plotly_chart(fig, use_container_width=True, key=f"growth_plot_updated_{plate}_{idx}")
 
 
