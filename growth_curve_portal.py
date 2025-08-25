@@ -9,6 +9,7 @@ import matplotlib.colors as mcolors
 import matplotlib.cm as cm
 from matplotlib.colors import LinearSegmentedColormap
 from io import StringIO
+from io import BytesIO
 import re
 import copy
 import scipy
@@ -502,11 +503,12 @@ if all_data:
 
         # ΔAUC Heatmap Section
         if cross_time is not None:
+            # Restrict to timepoints ≤ cross_time
             valid_mask = time_vals <= cross_time
             control_auc = np.trapz(mean_vals[valid_mask], time_vals[valid_mask])
 
             delta_auc_grid = pd.DataFrame(index=list("ABCDEFGH"), columns=[str(i) for i in range(1, 13)])
-            heatmap_data = {}
+            well_to_auc_diff = {}
 
             for well in candidate_wells:
                 row, col = well[0], well[1:]
@@ -516,35 +518,71 @@ if all_data:
                 well_auc = np.trapz(curve[valid_mask], time_vals[valid_mask])
                 delta_auc = well_auc - control_auc
                 delta_auc_grid.loc[row, col] = delta_auc
-                heatmap_data[f"{row}{col}"] = delta_auc
+                well_to_auc_diff[well] = delta_auc
 
             delta_auc_grid = delta_auc_grid.apply(pd.to_numeric)
 
-            st.subheader(f"{plate} – ΔAUC Heatmap (Click Cells to Toggle Curves)")
+            # Setup colormap for buttons
+            norm = mcolors.TwoSlopeNorm(vcenter=0, vmin=delta_auc_grid.min().min(), vmax=delta_auc_grid.max().max())
+            cmap = cm.get_cmap("coolwarm_r")
 
-            clicked_cell = st.selectbox(
-                f"Click a well to toggle its curve (Plate: {plate})",
-                options=["None"] + sorted(heatmap_data.keys()),
-                index=0,
-                key=f"heatmap_click_selector_{plate}"
-            )
+            # Plot header
+            st.subheader(f"{plate} – ΔAUC Well Grid vs Control (up to {threshold_to_use}×)")
 
-            if clicked_cell != "None":
-                toggle_well_selection(plate, clicked_cell)
+            # Session state to track selected wells
+            if f"selected_wells_{plate}" not in st.session_state:
+                st.session_state[f"selected_wells_{plate}"] = []
 
-            fig_hm, ax = plt.subplots(figsize=(12, 6))
-            sns.heatmap(
-                delta_auc_grid,
-                annot=True,
-                fmt=".2f",
-                cmap="coolwarm_r",
-                cbar_kws={"label": "ΔAUC"},
-                ax=ax
-            )
-            ax.set_title("ΔAUC per Well (vs Control)")
-            ax.set_xlabel("Column")
-            ax.set_ylabel("Row")
-            st.pyplot(fig_hm)
+            selected_wells = st.session_state[f"selected_wells_{plate}"]
+
+            # Render buttons per row (A–H, 1–12)
+            for row in list("ABCDEFGH"):
+                cols = st.columns(12)
+                for i, col in enumerate(cols):
+                    col_num = str(i + 1)
+                    well_id = f"{row}{col_num}"
+                    delta_auc = delta_auc_grid.loc[row, col_num] if col_num in delta_auc_grid.columns else None
+
+                    if pd.isna(delta_auc):
+                        col.write(" ")  # blank
+                        continue
+
+                    colour = mcolors.to_hex(cmap(norm(delta_auc)))
+                    label = f"{row}{col_num}"
+
+                    if col.button(label, key=f"{plate}_{label}", help=f"ΔAUC: {delta_auc:.2f}", use_container_width=True):
+                        if label in selected_wells:
+                            selected_wells.remove(label)
+                        else:
+                            selected_wells.append(label)
+
+                    # Inject button style via markdown (optional override for colour)
+                    button_style = f"""
+                        <style>
+                            div[data-testid="stButton"][key="{plate}_{label}"] button {{
+                                background-color: {colour};
+                                color: black;
+                                border: 1px solid #999;
+                                height: 36px;
+                                font-weight: bold;
+                            }}
+                        </style>
+                    """
+                    st.markdown(button_style, unsafe_allow_html=True)
+
+            # ➕ Add selected time series curves
+            for well in selected_wells:
+                if well in df.columns:
+                    fig.add_trace(go.Scatter(
+                        x=time_vals,
+                        y=df[well],
+                        name=f"Well {well}",
+                        mode="lines",
+                        line=dict(dash="dot", width=2)
+                    ))
+
+            # Re-render updated plot with toggled curves
+            st.plotly_chart(fig, use_container_width=True)
 
 
 # ========================
