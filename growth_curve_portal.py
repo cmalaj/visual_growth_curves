@@ -499,7 +499,7 @@ if all_data:
             margin=dict(l=50, r=50, t=50, b=50),
         )
 
-        st.plotly_chart(fig, use_container_width=True, key=f"growth_plot_base_{plate}_{idx}")
+        #st.plotly_chart(fig, use_container_width=True, key=f"growth_plot_base_{plate}_{idx}")
 
         # ΔAUC Heatmap Section
         # ΔAUC Heatmap Section
