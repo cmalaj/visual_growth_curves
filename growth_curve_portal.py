@@ -550,7 +550,7 @@ if all_data:
                     colour = mcolors.to_hex(cmap(norm(delta_auc)))
                     label = f"{row}{col_num}"
 
-                    if col.button(label, key=f"{plate}_{label}", help=f"ΔAUC: {delta_auc:.2f}", use_container_width=True):
+                    if col.button(label, key=f"{plate}_well_{label}_{idx}", help=f"ΔAUC: {delta_auc:.2f}", use_container_width=True):
                         if label in selected_wells:
                             selected_wells.remove(label)
                         else:
@@ -559,7 +559,7 @@ if all_data:
                     # Inject button style via markdown (optional override for colour)
                     button_style = f"""
                         <style>
-                            div[data-testid="stButton"][key="{plate}_{label}"] button {{
+                            div[data-testid="stButton"][key="{plate}_well_{label}_{idx}"] button {{
                                 background-color: {colour};
                                 color: black;
                                 border: 1px solid #999;
