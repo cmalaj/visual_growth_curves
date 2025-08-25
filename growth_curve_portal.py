@@ -501,7 +501,6 @@ if all_data:
 
         #st.plotly_chart(fig, use_container_width=True, key=f"growth_plot_base_{plate}_{idx}")
 
-        # ΔAUC Heatmap Section
         # -------------------------
         # ΔAUC Well Grid Section
         # -------------------------
@@ -539,36 +538,36 @@ if all_data:
 
             # Inject CSS for compact button styling
             st.markdown("""
-                <style>
-                    /* 🔧 Remove vertical spacing between rows of columns */
-                    div[data-testid="stVerticalBlock"] > div {
-                        margin-bottom: 0rem !important;
-                        padding-bottom: 0rem !important;
-                    }
+            <style>
+            /* Remove spacing between vertical block rows */
+            div[data-testid="stVerticalBlock"] > div {
+                margin-bottom: 0rem !important;
+                padding-bottom: 0rem !important;
+            }
 
-                    /* 🔧 Tighten spacing between columns */
-                    div[data-testid="column"] {
-                        padding: 0rem !important;
-                        margin: 0rem !important;
-                    }
+            /* Tighten spacing between columns */
+            div[data-testid="column"] {
+                padding: 0rem !important;
+                margin: 0rem !important;
+            }
 
-                    /* 🎯 Style each button */
-                    div[data-testid="stButton"] > button {
-                        padding: 2px 4px !important;
-                        font-size: 11px !important;
-                        height: 24px !important;
-                        width: 100% !important;
-                        margin: 0px !important;
-                        line-height: 1.1 !important;
-                        border: 1px solid #444 !important;
-                        font-weight: 600;
-                    }
+            /* Compact button layout globally */
+            div[data-testid="stButton"] > button {
+                padding: 2px 4px !important;
+                font-size: 11px !important;
+                height: 22px !important;
+                width: 100% !important;
+                margin: 0px !important;
+                line-height: 1.1 !important;
+                border: 1px solid #444 !important;
+                font-weight: 600;
+            }
 
-                    /* 🧱 Remove additional Streamlit default layout gaps */
-                    section.main > div > div > div > div {
-                        gap: 0rem !important;
-                    }
-                </style>
+            /* Shrink row container spacing */
+            section.main > div > div > div > div {
+                gap: 0rem !important;
+            }
+            </style>
             """, unsafe_allow_html=True)
 
             # Render buttons in an 8x12 grid (A–H x 1–12)
@@ -579,23 +578,23 @@ if all_data:
                     delta = delta_auc_grid.loc[row, str(col_num)]
 
                     if pd.isna(delta):
-                        cols[col_idx].write(" ")  # Empty cell
+                        cols[col_idx].write(" ")
                         continue
 
                     colour = mcolors.to_hex(cmap(norm(delta)))
                     button_key = f"{plate}_{well_id}_{idx}"
 
-                    # Dynamically style the button using its key
+                    # Inject per-button style BEFORE rendering the button
                     st.markdown(f"""
                         <style>
-                            div[data-testid="stButton"][key="{button_key}"] button {{
+                            div[data-testid="stButton"] > button:has(span:contains('{well_id}')) {{
                                 background-color: {colour};
                                 color: black;
-                                border: 1px solid #999;
                             }}
                         </style>
                     """, unsafe_allow_html=True)
 
+                    # Render the button
                     if cols[col_idx].button(well_id, key=button_key, help=f"ΔAUC: {delta:.2f}"):
                         if well_id in selected_wells:
                             selected_wells.remove(well_id)
