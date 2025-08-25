@@ -637,3 +637,28 @@ if all_data:  # Only run if data has been loaded
         )
 
         st.plotly_chart(fig, use_container_width=True)
+
+        # --- Calculate and Plot Area Under the Curve ---
+        auc = np.trapz(mean_vals.values, x=time_vals.values)
+
+        auc_fig = go.Figure()
+
+        auc_fig.add_trace(go.Scatter(
+            x=time_vals,
+            y=mean_vals,
+            fill='tozeroy',
+            mode='lines',
+            line=dict(color="green"),
+            name="Mean Growth (AUC)"
+        ))
+
+        auc_fig.update_layout(
+            title=f"AUC for {st.session_state['plate_titles'].get(plate, plate)} = {auc:.2f}",
+            xaxis_title="Time (minutes)",
+            yaxis_title="OD600",
+            yaxis=dict(range=[0, mean_vals.max() * 1.1]),
+            margin=dict(l=50, r=50, t=50, b=50),
+            showlegend=False
+        )
+
+        st.plotly_chart(auc_fig, use_container_width=True)
