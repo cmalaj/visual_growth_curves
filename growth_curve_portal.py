@@ -394,7 +394,24 @@ if uploaded_files:
 ###############
 # Bacterial growth threshold analysis
 ###############
-if all_data:  # Only run if data has been loaded
+
+# ----------------------
+# Helper for session state
+# ----------------------
+def toggle_well_selection(plate, well):
+    key = f"selected_wells_{plate}"
+    if key not in st.session_state:
+        st.session_state[key] = set()
+    if well in st.session_state[key]:
+        st.session_state[key].remove(well)
+    else:
+        st.session_state[key].add(well)
+
+
+# ----------------------
+# Main Threshold Analysis Section
+# ----------------------
+if all_data:
     st.markdown("---")
     st.header("Growth Threshold Analysis")
 
@@ -402,14 +419,9 @@ if all_data:  # Only run if data has been loaded
 
     for idx, df in enumerate(all_data_scaled):
         plate = df["Plate"].iloc[0]
-        fig = go.Figure()
-
-        # Fetch well columns
         candidate_wells = [col for col in df.columns if re.fullmatch(r"[A-H]1[0-2]?|[A-H][1-9]", col)]
 
         st.subheader(f"{plate} – Select Bacterial Control Wells by Position")
-
-        # Use preferred positions if available
         preferred_default_wells = ["A12", "B12", "D12", "E12", "G12", "H12"]
         default = [w for w in preferred_default_wells if w in candidate_wells]
 
@@ -427,7 +439,6 @@ if all_data:  # Only run if data has been loaded
         baseline = mean_vals.iloc[0]
         time_vals = df.index
 
-        # Dynamic growth threshold selector
         st.subheader(f"{plate} – Select Growth Threshold for AUC Integration")
         threshold_to_use = st.selectbox(
             f"Select threshold (× growth) for {plate}",
@@ -436,33 +447,29 @@ if all_data:  # Only run if data has been loaded
             key=f"threshold_selector_{plate}"
         )
 
-        # Compute threshold crossing time
+        # Threshold Crossing
         thresh_val = baseline * threshold_to_use
         cross_idx = np.argmax(mean_vals.values >= thresh_val)
         cross_time = time_vals[cross_idx] if cross_idx < len(time_vals) else None
 
-        # Plot control growth curve
+        # Interactive Curve Plot
+        fig = go.Figure()
         fig.add_trace(go.Scatter(
             x=time_vals,
             y=mean_vals,
-            name="Mean Bacterial Growth",
-            mode="lines",
+            name="Mean Control Growth",
             line=dict(color="blue", width=3)
         ))
 
         if cross_time is not None:
-            # Add vertical threshold line
             fig.add_shape(
                 type="line",
-                x0=cross_time,
-                x1=cross_time,
-                y0=0,
-                y1=mean_vals.max() * 1.1,
+                x0=cross_time, x1=cross_time,
+                y0=0, y1=mean_vals.max() * 1.1,
                 line=dict(dash="dash", color="red")
             )
             fig.add_trace(go.Scatter(
-                x=[cross_time],
-                y=[thresh_val],
+                x=[cross_time], y=[thresh_val],
                 mode="markers+text",
                 marker=dict(color="red", size=6),
                 text=[f"{threshold_to_use}×"],
@@ -470,25 +477,36 @@ if all_data:  # Only run if data has been loaded
                 showlegend=False
             ))
 
+        # Plot additional selected well curves
+        well_key = f"selected_wells_{plate}"
+        selected_wells = st.session_state.get(well_key, set())
+        color_cycle = plt.cm.tab10.colors
+        for i, well in enumerate(selected_wells):
+            if well in df.columns:
+                fig.add_trace(go.Scatter(
+                    x=time_vals,
+                    y=df[well],
+                    name=f"Well {well}",
+                    line=dict(color=f"rgba{color_cycle[i % 10]}", width=2)
+                ))
+
         fig.update_layout(
-            title=f"{st.session_state['plate_titles'].get(plate, plate)} – Threshold Crossings",
+            title=f"{st.session_state['plate_titles'].get(plate, plate)} – Growth Curves",
             xaxis_title="Time (minutes)",
-            yaxis_title="Mean OD600",
+            yaxis_title="OD600",
             yaxis=dict(range=[0, mean_vals.max() * 1.1]),
-            margin=dict(l=50, r=50, t=50, b=50)
+            margin=dict(l=50, r=50, t=50, b=50),
         )
 
         st.plotly_chart(fig, use_container_width=True)
 
         # ΔAUC Heatmap Section
         if cross_time is not None:
-            
-
-            # Restrict to timepoints ≤ cross_time
             valid_mask = time_vals <= cross_time
             control_auc = np.trapz(mean_vals[valid_mask], time_vals[valid_mask])
 
             delta_auc_grid = pd.DataFrame(index=list("ABCDEFGH"), columns=[str(i) for i in range(1, 13)])
+            heatmap_data = {}
 
             for well in candidate_wells:
                 row, col = well[0], well[1:]
@@ -498,10 +516,21 @@ if all_data:  # Only run if data has been loaded
                 well_auc = np.trapz(curve[valid_mask], time_vals[valid_mask])
                 delta_auc = well_auc - control_auc
                 delta_auc_grid.loc[row, col] = delta_auc
+                heatmap_data[f"{row}{col}"] = delta_auc
 
             delta_auc_grid = delta_auc_grid.apply(pd.to_numeric)
 
-            st.subheader(f"{plate} – ΔAUC Heatmap vs Control (up to {threshold_to_use}×)")
+            st.subheader(f"{plate} – ΔAUC Heatmap (Click Cells to Toggle Curves)")
+
+            clicked_cell = st.selectbox(
+                f"Click a well to toggle its curve (Plate: {plate})",
+                options=["None"] + sorted(heatmap_data.keys()),
+                index=0,
+                key=f"heatmap_click_selector_{plate}"
+            )
+
+            if clicked_cell != "None":
+                toggle_well_selection(plate, clicked_cell)
 
             fig_hm, ax = plt.subplots(figsize=(12, 6))
             sns.heatmap(
@@ -521,6 +550,7 @@ if all_data:  # Only run if data has been loaded
 # ========================
 # Comparison Plot Section
 # ========================
+
 if all_data:  # Only run if data has been loaded
     st.markdown("---")
     st.header("Comparison Plot")
