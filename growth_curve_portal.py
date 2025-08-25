@@ -273,7 +273,7 @@ if uploaded_files:
 
         group_replicates = st.checkbox(
             f"Group technical replicates for {plate}?",
-            value=False,
+            value=True,
             key=f"group_reps_{plate}"
         )
         # Align all wells to start at OD600 = 0.0001
