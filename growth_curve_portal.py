@@ -522,64 +522,65 @@ if all_data:
 
             delta_auc_grid = delta_auc_grid.apply(pd.to_numeric)
 
+            # Colour normalisation and mapping
             norm = mcolors.TwoSlopeNorm(vcenter=0, vmin=delta_auc_grid.min().min(), vmax=delta_auc_grid.max().max())
             cmap = cm.get_cmap("coolwarm_r")
 
-            st.subheader(f"{plate} – ΔAUC Well Grid vs Control (up to {threshold_to_use}×)")
+            st.subheader(f"{plate} – ΔAUC Button Grid (up to {threshold_to_use}×)")
 
-            # Initialise session state
+            # Session key
             well_key = f"selected_wells_{plate}_{idx}"
             if well_key not in st.session_state:
                 st.session_state[well_key] = []
             selected_wells = st.session_state[well_key]
 
-            # Inject global CSS to shrink buttons and spacing
-            st.markdown("""
-                <style>
-                    div[data-testid="stButton"] button {
-                        height: 24px;
-                        font-size: 12px;
-                        padding: 2px 6px;
-                        margin: 0px;
-                    }
-                </style>
-            """, unsafe_allow_html=True)
+            # Form to batch handle clicks
+            with st.form(f"form_{plate}_{idx}"):
+                clicked_well = st.session_state.get("clicked_well", None)
 
-            # Render buttons in 8×12 grid
-            for row in list("ABCDEFGH"):
-                cols = st.columns(12)
-                for i, col in enumerate(cols):
-                    col_num = str(i + 1)
-                    well_label = f"{row}{col_num}"
-                    delta_auc = delta_auc_grid.loc[row, col_num] if col_num in delta_auc_grid.columns else None
+                html = "<div style='display: grid; grid-template-columns: repeat(12, 1fr); gap: 1px;'>"
+                button_cols = []
 
-                    if pd.isna(delta_auc):
-                        col.markdown(" ")
-                        continue
+                for row in list("ABCDEFGH"):
+                    for col_num in range(1, 13):
+                        well_id = f"{row}{col_num}"
+                        delta = delta_auc_grid.loc[row, str(col_num)]
+                        if pd.isna(delta):
+                            html += f"<div></div>"
+                            continue
 
-                    # Generate colour from colormap
-                    colour = mcolors.to_hex(cmap(norm(delta_auc)))
-                    button_key = f"{plate}_well_{well_label}_{idx}"
+                        colour = mcolors.to_hex(cmap(norm(delta)))
+                        # Hidden input to simulate button click
+                        html += f"""
+                            <button type="submit" name="clicked_well" value="{well_id}" 
+                                style="
+                                    background-color: {colour}; 
+                                    border: 1px solid #555; 
+                                    height: 28px; 
+                                    font-size: 12px; 
+                                    padding: 2px; 
+                                    color: black;
+                                    font-weight: bold;
+                                ">
+                                {well_id}
+                            </button>
+                        """
 
-                    # Actual button
-                    if col.button(well_label, key=button_key, help=f"ΔAUC: {delta_auc:.2f}"):
-                        if well_label in selected_wells:
-                            selected_wells.remove(well_label)
+                html += "</div>"
+
+                st.markdown(html, unsafe_allow_html=True)
+                submitted = st.form_submit_button("Update Plot", use_container_width=True)
+
+                # Handle click
+                if submitted:
+                    clicked_well = st.session_state.get("clicked_well", None)
+                    if clicked_well:
+                        if clicked_well in selected_wells:
+                            selected_wells.remove(clicked_well)
                         else:
-                            selected_wells.append(well_label)
+                            selected_wells.append(clicked_well)
 
-                    # Inject inline style to modify that specific button
-                    st.markdown(f"""
-                        <style>
-                            div[data-testid="stButton"][key="{button_key}"] button {{
-                                background-color: {colour};
-                                border: 1px solid #555;
-                                color: black;
-                            }}
-                        </style>
-                    """, unsafe_allow_html=True)
-
-            # ➕ Add selected time series curves
+            # ➕ Add selected curves to plot
             for well in selected_wells:
                 if well in df.columns:
                     fig.add_trace(go.Scatter(
@@ -590,7 +591,7 @@ if all_data:
                         line=dict(dash="dot", width=2)
                     ))
 
-            # Re-render plot with updated selections
+            # Re-render the figure
             st.plotly_chart(fig, use_container_width=True, key=f"growth_plot_updated_{plate}_{idx}")
 
 
