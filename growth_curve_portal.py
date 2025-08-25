@@ -499,7 +499,7 @@ if all_data:
             margin=dict(l=50, r=50, t=50, b=50),
         )
 
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key=f"growth_plot_base_{plate}_{idx}")
 
         # ΔAUC Heatmap Section
         if cross_time is not None:
@@ -582,7 +582,7 @@ if all_data:
                     ))
 
             # Re-render updated plot with toggled curves
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, key=f"growth_plot_updated_{plate}_{idx}")
 
 
 # ========================
