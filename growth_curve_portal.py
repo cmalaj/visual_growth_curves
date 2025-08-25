@@ -11,6 +11,8 @@ from matplotlib.colors import LinearSegmentedColormap
 from io import StringIO
 import re
 import copy
+import scipy
+st.write("scipy version:", scipy.__version__)
 from scipy.integrate import trapz
 import seaborn as sns
 
