@@ -546,7 +546,7 @@ if all_data:
                     div[data-testid="stButton"] button {
                         padding: 1px 1px;
                         font-size: 12px;
-                        height: 24px;
+                        height: 4px;
                         width: 100%;
                         font-weight: bold;
                     }
