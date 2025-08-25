@@ -17,6 +17,8 @@ import seaborn as sns
 st.set_page_config(layout="wide")
 st.title("Growth Curve Visualisation Portal v. 1.0")
 
+DEFAULT_TIME_UNIT = "Hours"
+
 # Generate 96 distinct colours from the rainbow colormap
 rainbow_cmap = cm.get_cmap("gist_rainbow", 96)
 well_order = [f"{row}{col}" for row in "ABCDEFGH" for col in range(1, 13)]
@@ -231,7 +233,8 @@ if uploaded_files:
             f"{plate} – X-axis time unit",
             options=["Minutes", "Hours"],
             horizontal=True,
-            key=f"time_unit_{plate}"
+            key=f"time_unit_{plate}",
+            index=1 if DEFAULT_TIME_UNIT == "Hours" else 0
         )
 
         # Axis range override UI
@@ -527,7 +530,8 @@ if all_data:  # Only run if data has been loaded
         "Time Axis Unit for Comparison Plot",
         options=["Minutes", "Hours"],
         horizontal=True,
-        key="comparison_time_unit"
+        key="comparison_time_unit",
+        index=1 if DEFAULT_TIME_UNIT == "Hours" else 0
     )
 
 
