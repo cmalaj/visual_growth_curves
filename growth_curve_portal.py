@@ -566,7 +566,7 @@ if all_data:
                                 border-radius: 0px;
                                 margin-top: -48px;
                                 height: 24px;
-                                line-height: 12px;
+                                line-height: 24px;
                                 text-align: center;
                                 font-size: 11px;
                                 font-weight: bold;
