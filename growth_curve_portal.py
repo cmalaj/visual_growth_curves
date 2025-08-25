@@ -502,7 +502,7 @@ if all_data:
         #st.plotly_chart(fig, use_container_width=True, key=f"growth_plot_base_{plate}_{idx}")
 
         # -------------------------
-        # ΔAUC Well Grid Section (Streamlit-Compatible)
+        # ΔAUC Well Grid Section
         # -------------------------
         if cross_time is not None:
             valid_mask = time_vals <= cross_time
@@ -563,12 +563,12 @@ if all_data:
                             <div style="
                                 background-color: {colour};
                                 border: {border_style};
-                                border-radius: 3px;
+                                border-radius: 1px;
                                 margin-top: -38px;
-                                height: 24px;
-                                line-height: 24px;
+                                height: 12px;
+                                line-height: 12px;
                                 text-align: center;
-                                font-size: 11px;
+                                font-size: 0px;
                                 font-weight: bold;
                                 color: black;
                             ">
