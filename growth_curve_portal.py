@@ -557,6 +557,7 @@ if all_data:
                                 selected_wells.remove(well_id)
                             else:
                                 selected_wells.append(well_id)
+                            st.experimental_rerun()
 
                         st.markdown(
                             f"""
