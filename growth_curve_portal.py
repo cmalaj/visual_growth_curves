@@ -534,14 +534,17 @@ if all_data:
 
             selected_wells = st.session_state[session_key]
 
-            # Optional CSS to reduce vertical spacing
+            # Optional CSS to reduce spacing and nudge checkboxes down
             st.markdown("""
             <style>
             div[data-testid="stCheckbox"] {
                 margin-bottom: 0px;
+                margin-top: 8px;  /* <-- This nudges the checkbox lower */
+                display: flex;
+                align-items: flex-start;
+                justify-content: center;
             }
-            div[data-testid="stCheckbox"] label {
-                height: 0px;
+            div[data-testid="stCheckbox"] > label {
                 padding: 0px;
             }
             </style>
