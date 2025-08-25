@@ -535,41 +535,50 @@ if all_data:
 
             selected_wells = st.session_state[f"selected_wells_{plate}"]
 
+            # Global style injection to reduce spacing between elements
+            st.markdown("""
+                <style>
+                    div.row-widget.stButton > button {
+                        margin-bottom: 0px !important;
+                    }
+                </style>
+            """, unsafe_allow_html=True)
+
             # Render buttons per row (A–H, 1–12)
             for row in list("ABCDEFGH"):
-                cols = st.columns(12)
-                for i, col in enumerate(cols):
-                    col_num = str(i + 1)
-                    well_id = f"{row}{col_num}"
-                    delta_auc = delta_auc_grid.loc[row, col_num] if col_num in delta_auc_grid.columns else None
+                with st.container():
+                    cols = st.columns(12)
+                    for i, col in enumerate(cols):
+                        col_num = str(i + 1)
+                        well_id = f"{row}{col_num}"
+                        delta_auc = delta_auc_grid.loc[row, col_num] if col_num in delta_auc_grid.columns else None
 
-                    if pd.isna(delta_auc):
-                        col.write(" ")  # blank
-                        continue
+                        if pd.isna(delta_auc):
+                            col.write(" ")  # blank cell
+                            continue
 
-                    colour = mcolors.to_hex(cmap(norm(delta_auc)))
-                    label = f"{row}{col_num}"
+                        colour = mcolors.to_hex(cmap(norm(delta_auc)))
+                        label = f"{row}{col_num}"
 
-                    if col.button(label, key=f"{plate}_well_{label}_{idx}", help=f"ΔAUC: {delta_auc:.2f}", use_container_width=True):
-                        if label in selected_wells:
-                            selected_wells.remove(label)
-                        else:
-                            selected_wells.append(label)
+                        if col.button(label, key=f"{plate}_well_{label}_{idx}", help=f"ΔAUC: {delta_auc:.2f}", use_container_width=True):
+                            if label in selected_wells:
+                                selected_wells.remove(label)
+                            else:
+                                selected_wells.append(label)
 
-                    # Inject button style via markdown (optional override for colour)
-                    button_style = f"""
-                        <style>
-                            div[data-testid="stButton"][key="{plate}_well_{label}_{idx}"] button {{
-                                background-color: {colour};
-                                color: black;
-                                border: 1px solid #999;
-                                height: 24px;
-                                font-size: 12px;
-                                padding: 2px 4px;
-                            }}
-                        </style>
-                    """
-                    st.markdown(button_style, unsafe_allow_html=True)
+                        # Inject custom styling for the button
+                        st.markdown(f"""
+                            <style>
+                                div[data-testid="stButton"][key="{plate}_well_{label}_{idx}"] button {{
+                                    background-color: {colour};
+                                    color: black;
+                                    height: 24px;
+                                    font-size: 12px;
+                                    padding: 2px 4px;
+                                    margin: 0px;
+                                }}
+                            </style>
+                        """, unsafe_allow_html=True)
 
             # ➕ Add selected time series curves
             for well in selected_wells:
