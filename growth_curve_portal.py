@@ -388,8 +388,9 @@ if uploaded_files:
 
 
 
-
+###############
 # Bacterial growth threshold analysis
+###############
 if all_data:  # Only run if data has been loaded
     st.markdown("---")
     st.header("Growth Threshold Analysis")
@@ -503,7 +504,7 @@ if all_data:  # Only run if data has been loaded
             sns.heatmap(
                 delta_auc_grid,
                 annot=True,
-                fmt=".0f",
+                fmt=".2f",
                 cmap="coolwarm_r",
                 cbar_kws={"label": "ΔAUC"},
                 ax=ax
