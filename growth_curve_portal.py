@@ -551,7 +551,21 @@ if all_data:
                     border_style = "3px solid black" if is_selected else "0px solid #333"
 
                     with cols[i]:
-                        clicked = st.button(" ", key=button_key, help=well_id)
+                        button_html = f"""
+                            <style>
+                            div[data-testid="stButton"] > button {{
+                                width: 100%;
+                                height: 24px;
+                                padding: 0;
+                                margin: 0;
+                                border: none;
+                                background-color: transparent;
+                                box-shadow: none;
+                            }}
+                            </style>
+                        """
+                        cols[i].markdown(button_html, unsafe_allow_html=True)
+                        clicked = cols[i].button(" ", key=button_key, help=well_id)
                         if clicked:
                             if is_selected:
                                 selected_wells.remove(well_id)
