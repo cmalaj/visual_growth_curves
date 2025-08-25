@@ -540,19 +540,33 @@ if all_data:
             # Inject CSS for compact button styling
             st.markdown("""
                 <style>
+                    /* 🔧 Remove vertical spacing between rows of columns */
+                    div[data-testid="stVerticalBlock"] > div {
+                        margin-bottom: 0rem !important;
+                        padding-bottom: 0rem !important;
+                    }
+
+                    /* 🔧 Tighten spacing between columns */
                     div[data-testid="column"] {
-                        padding: 0.1rem;
+                        padding: 0rem !important;
+                        margin: 0rem !important;
                     }
-                    div[data-testid="stButton"] button {
-                        padding: 2px 4px;
-                        font-size: 12px;
-                        height: 24px;
-                        width: 100%;
-                        font-weight: bold;
+
+                    /* 🎯 Style each button */
+                    div[data-testid="stButton"] > button {
+                        padding: 2px 4px !important;
+                        font-size: 11px !important;
+                        height: 24px !important;
+                        width: 100% !important;
+                        margin: 0px !important;
+                        line-height: 1.1 !important;
+                        border: 1px solid #444 !important;
+                        font-weight: 600;
                     }
-                    /* 👇 NEW: reduce vertical gap between st.columns blocks */
+
+                    /* 🧱 Remove additional Streamlit default layout gaps */
                     section.main > div > div > div > div {
-                        gap: 0.1rem !important;
+                        gap: 0rem !important;
                     }
                 </style>
             """, unsafe_allow_html=True)
