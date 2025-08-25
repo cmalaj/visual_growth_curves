@@ -387,6 +387,133 @@ if uploaded_files:
         st.plotly_chart(fig, use_container_width=True)
 
 
+
+
+# Bacterial growth threshold analysis
+if all_data:  # Only run if data has been loaded
+    st.markdown("---")
+    st.header("Growth Threshold Analysis")
+
+    thresholds = [100, 1000, 2500, 5000, 7500]
+
+    for idx, df in enumerate(all_data_scaled):
+        plate = df["Plate"].iloc[0]
+        fig = go.Figure()
+
+        # Fetch well columns
+        candidate_wells = [col for col in df.columns if re.fullmatch(r"[A-H]1[0-2]?|[A-H][1-9]", col)]
+
+        st.subheader(f"{plate} – Select Bacterial Control Wells by Position")
+
+        # Use preferred positions if available
+        preferred_default_wells = ["A12", "B12", "D12", "E12", "G12", "H12"]
+        default = [w for w in preferred_default_wells if w in candidate_wells]
+
+        selected_positions = st.multiselect(
+            f"Choose control well positions (e.g. A12, B11) for {plate}",
+            options=candidate_wells,
+            default=default
+        )
+
+        if not selected_positions:
+            st.warning(f"No control well positions selected for {plate}. Skipping.")
+            continue
+
+        mean_vals = df[selected_positions].mean(axis=1)
+        baseline = mean_vals.iloc[0]
+        time_vals = df.index
+
+        # Dynamic growth threshold selector
+        st.subheader(f"{plate} – Select Growth Threshold for AUC Integration")
+        threshold_to_use = st.selectbox(
+            f"Select threshold (× growth) for {plate}",
+            thresholds,
+            index=0,
+            key=f"threshold_selector_{plate}"
+        )
+
+        # Compute threshold crossing time
+        thresh_val = baseline * threshold_to_use
+        cross_idx = np.argmax(mean_vals.values >= thresh_val)
+        cross_time = time_vals[cross_idx] if cross_idx < len(time_vals) else None
+
+        # Plot control growth curve
+        fig.add_trace(go.Scatter(
+            x=time_vals,
+            y=mean_vals,
+            name="Mean Bacterial Growth",
+            mode="lines",
+            line=dict(color="blue", width=3)
+        ))
+
+        if cross_time is not None:
+            # Add vertical threshold line
+            fig.add_shape(
+                type="line",
+                x0=cross_time,
+                x1=cross_time,
+                y0=0,
+                y1=mean_vals.max() * 1.1,
+                line=dict(dash="dash", color="red")
+            )
+            fig.add_trace(go.Scatter(
+                x=[cross_time],
+                y=[thresh_val],
+                mode="markers+text",
+                marker=dict(color="red", size=6),
+                text=[f"{threshold_to_use}×"],
+                textposition="top center",
+                showlegend=False
+            ))
+
+        fig.update_layout(
+            title=f"{st.session_state['plate_titles'].get(plate, plate)} – Threshold Crossings",
+            xaxis_title="Time (minutes)",
+            yaxis_title="Mean OD600",
+            yaxis=dict(range=[0, mean_vals.max() * 1.1]),
+            margin=dict(l=50, r=50, t=50, b=50)
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        # 🔥 ΔAUC Heatmap Section
+        if cross_time is not None:
+            
+
+            # Restrict to timepoints ≤ cross_time
+            valid_mask = time_vals <= cross_time
+            control_auc = np.trapz(mean_vals[valid_mask], time_vals[valid_mask])
+
+            delta_auc_grid = pd.DataFrame(index=list("ABCDEFGH"), columns=[str(i) for i in range(1, 13)])
+
+            for well in candidate_wells:
+                row, col = well[0], well[1:]
+                if well not in df.columns or row not in delta_auc_grid.index or col not in delta_auc_grid.columns:
+                    continue
+                curve = df[well]
+                well_auc = np.trapz(curve[valid_mask], time_vals[valid_mask])
+                delta_auc = well_auc - control_auc
+                delta_auc_grid.loc[row, col] = delta_auc
+
+            delta_auc_grid = delta_auc_grid.apply(pd.to_numeric)
+
+            st.subheader(f"{plate} – ΔAUC Heatmap vs Control (up to {threshold_to_use}×)")
+
+            fig_hm, ax = plt.subplots(figsize=(12, 6))
+            sns.heatmap(
+                delta_auc_grid,
+                annot=True,
+                fmt=".0f",
+                cmap="coolwarm",
+                cbar_kws={"label": "ΔAUC"},
+                ax=ax
+            )
+            ax.set_title("ΔAUC per Well (vs Control)")
+            ax.set_xlabel("Column")
+            ax.set_ylabel("Row")
+            st.pyplot(fig_hm)
+
+
 # ========================
 # Comparison Plot Section
 # ========================
@@ -557,128 +684,3 @@ if all_data:  # Only run if data has been loaded
         )
 
         st.plotly_chart(fig, use_container_width=True)
-
-# Bacterial growth threshold analysis
-# Bacterial growth threshold analysis
-if all_data:  # Only run if data has been loaded
-    st.markdown("---")
-    st.header("Growth Threshold Analysis")
-
-    thresholds = [100, 1000, 2500, 5000, 7500]
-
-    for idx, df in enumerate(all_data_scaled):
-        plate = df["Plate"].iloc[0]
-        fig = go.Figure()
-
-        # Fetch well columns
-        candidate_wells = [col for col in df.columns if re.fullmatch(r"[A-H]1[0-2]?|[A-H][1-9]", col)]
-
-        st.subheader(f"{plate} – Select Bacterial Control Wells by Position")
-
-        # Use preferred positions if available
-        preferred_default_wells = ["A12", "B12", "D12", "E12", "G12", "H12"]
-        default = [w for w in preferred_default_wells if w in candidate_wells]
-
-        selected_positions = st.multiselect(
-            f"Choose control well positions (e.g. A12, B11) for {plate}",
-            options=candidate_wells,
-            default=default
-        )
-
-        if not selected_positions:
-            st.warning(f"No control well positions selected for {plate}. Skipping.")
-            continue
-
-        mean_vals = df[selected_positions].mean(axis=1)
-        baseline = mean_vals.iloc[0]
-        time_vals = df.index
-
-        # Dynamic growth threshold selector
-        st.subheader(f"{plate} – Select Growth Threshold for AUC Integration")
-        threshold_to_use = st.selectbox(
-            f"Select threshold (× growth) for {plate}",
-            thresholds,
-            index=0,
-            key=f"threshold_selector_{plate}"
-        )
-
-        # Compute threshold crossing time
-        thresh_val = baseline * threshold_to_use
-        cross_idx = np.argmax(mean_vals.values >= thresh_val)
-        cross_time = time_vals[cross_idx] if cross_idx < len(time_vals) else None
-
-        # Plot control growth curve
-        fig.add_trace(go.Scatter(
-            x=time_vals,
-            y=mean_vals,
-            name="Mean Bacterial Growth",
-            mode="lines",
-            line=dict(color="blue", width=3)
-        ))
-
-        if cross_time is not None:
-            # Add vertical threshold line
-            fig.add_shape(
-                type="line",
-                x0=cross_time,
-                x1=cross_time,
-                y0=0,
-                y1=mean_vals.max() * 1.1,
-                line=dict(dash="dash", color="red")
-            )
-            fig.add_trace(go.Scatter(
-                x=[cross_time],
-                y=[thresh_val],
-                mode="markers+text",
-                marker=dict(color="red", size=6),
-                text=[f"{threshold_to_use}×"],
-                textposition="top center",
-                showlegend=False
-            ))
-
-        fig.update_layout(
-            title=f"{st.session_state['plate_titles'].get(plate, plate)} – Threshold Crossings",
-            xaxis_title="Time (minutes)",
-            yaxis_title="Mean OD600",
-            yaxis=dict(range=[0, mean_vals.max() * 1.1]),
-            margin=dict(l=50, r=50, t=50, b=50)
-        )
-
-        st.plotly_chart(fig, use_container_width=True)
-
-        # 🔥 ΔAUC Heatmap Section
-        if cross_time is not None:
-            
-
-            # Restrict to timepoints ≤ cross_time
-            valid_mask = time_vals <= cross_time
-            control_auc = np.trapz(mean_vals[valid_mask], time_vals[valid_mask])
-
-            delta_auc_grid = pd.DataFrame(index=list("ABCDEFGH"), columns=[str(i) for i in range(1, 13)])
-
-            for well in candidate_wells:
-                row, col = well[0], well[1:]
-                if well not in df.columns or row not in delta_auc_grid.index or col not in delta_auc_grid.columns:
-                    continue
-                curve = df[well]
-                well_auc = np.trapz(curve[valid_mask], time_vals[valid_mask])
-                delta_auc = well_auc - control_auc
-                delta_auc_grid.loc[row, col] = delta_auc
-
-            delta_auc_grid = delta_auc_grid.apply(pd.to_numeric)
-
-            st.subheader(f"{plate} – ΔAUC Heatmap vs Control (up to {threshold_to_use}×)")
-
-            fig_hm, ax = plt.subplots(figsize=(12, 6))
-            sns.heatmap(
-                delta_auc_grid,
-                annot=True,
-                fmt=".0f",
-                cmap="coolwarm",
-                cbar_kws={"label": "ΔAUC"},
-                ax=ax
-            )
-            ax.set_title("ΔAUC per Well (vs Control)")
-            ax.set_xlabel("Column")
-            ax.set_ylabel("Row")
-            st.pyplot(fig_hm)
