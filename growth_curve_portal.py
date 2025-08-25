@@ -502,7 +502,8 @@ if all_data:
         #st.plotly_chart(fig, use_container_width=True, key=f"growth_plot_base_{plate}_{idx}")
 
         # -------------------------
-        # ΔAUC Well Grid Section
+        # ΔAUC Well Grid Section (Streamlit-Compatible)
+        # -------------------------
         if cross_time is not None:
             valid_mask = time_vals <= cross_time
             control_auc = np.trapz(mean_vals[valid_mask], time_vals[valid_mask])
@@ -521,79 +522,63 @@ if all_data:
                 well_to_auc_diff[well] = delta_auc
 
             delta_auc_grid = delta_auc_grid.apply(pd.to_numeric)
-
-            # Set up color normalization and colormap
             norm = mcolors.TwoSlopeNorm(vcenter=0, vmin=delta_auc_grid.min().min(), vmax=delta_auc_grid.max().max())
             cmap = cm.get_cmap("coolwarm_r")
 
             st.subheader(f"{plate} – ΔAUC Well Grid (up to {threshold_to_use}×)")
 
-            # Track selected wells in session state
+            # Store selections per plate + threshold combo
             session_key = f"selected_wells_{plate}_{idx}"
             if session_key not in st.session_state:
                 st.session_state[session_key] = []
 
             selected_wells = st.session_state[session_key]
 
-            # Inject CSS for styling
-            st.markdown("""
-            <style>
-            div[data-testid="stVerticalBlock"] > div {
-                margin-bottom: 0rem !important;
-                padding-bottom: 0rem !important;
-            }
-
-            div[data-testid="column"] {
-                padding: 0rem !important;
-                margin: 0rem !important;
-            }
-
-            div[data-testid^="stButton-"] button {
-                padding: 2px 4px !important;
-                font-size: 11px !important;
-                height: 24px !important;
-                width: 100% !important;
-                margin: 0px !important;
-                font-weight: 600;
-                line-height: 1.1 !important;
-            }
-            </style>
-            """, unsafe_allow_html=True)
-
-            # Render buttons in 8×12 grid
+            # Grid rendering
             for row in list("ABCDEFGH"):
-                cols = st.columns(12)
-                for col_idx, col_num in enumerate(range(1, 13)):
+                cols = st.columns(12, gap="small")
+                for i, col_num in enumerate(range(1, 13)):
                     well_id = f"{row}{col_num}"
                     delta = delta_auc_grid.loc[row, str(col_num)]
 
                     if pd.isna(delta):
-                        cols[col_idx].write(" ")
+                        cols[i].markdown(f"<div style='height:26px;'></div>", unsafe_allow_html=True)
                         continue
 
-                    # Generate colour
                     colour = mcolors.to_hex(cmap(norm(delta)))
-                    element_id = f"btn_{plate}_{well_id}_{idx}"
+                    button_key = f"{plate}_{well_id}_{idx}"
+                    is_selected = well_id in selected_wells
+                    border_style = "3px solid black" if is_selected else "1px solid #333"
 
-                    # Inject inline CSS for this specific button ID
-                    st.markdown(f"""
-                        <style>
-                            div[data-testid="stButton-{element_id}"] button {{
+                    with cols[i]:
+                        clicked = st.button(" ", key=button_key, help=well_id)
+                        if clicked:
+                            if is_selected:
+                                selected_wells.remove(well_id)
+                            else:
+                                selected_wells.append(well_id)
+
+                        st.markdown(
+                            f"""
+                            <div style="
                                 background-color: {colour};
+                                border: {border_style};
+                                border-radius: 3px;
+                                margin-top: -38px;
+                                height: 24px;
+                                line-height: 24px;
+                                text-align: center;
+                                font-size: 11px;
+                                font-weight: bold;
                                 color: black;
-                                border: 1px solid #333;
-                            }}
-                        </style>
-                    """, unsafe_allow_html=True)
+                            ">
+                                {well_id}
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
 
-                    # Create coloured button with unique element_id
-                    if cols[col_idx].button(well_id, key=f"{element_id}", help=f"ΔAUC: {delta:.2f}"):
-                        if well_id in selected_wells:
-                            selected_wells.remove(well_id)
-                        else:
-                            selected_wells.append(well_id)
-
-            # Plot selected growth curves
+            # Plot selected wells
             for well in selected_wells:
                 if well in df.columns:
                     fig.add_trace(go.Scatter(
