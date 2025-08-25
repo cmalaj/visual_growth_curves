@@ -394,7 +394,7 @@ if all_data:  # Only run if data has been loaded
     st.markdown("---")
     st.header("Growth Threshold Analysis")
 
-    thresholds = [100, 1000, 2500, 5000, 7500]
+    thresholds = [1000, 2000, 5000, 7500]
 
     for idx, df in enumerate(all_data_scaled):
         plate = df["Plate"].iloc[0]
@@ -476,7 +476,7 @@ if all_data:  # Only run if data has been loaded
 
         st.plotly_chart(fig, use_container_width=True)
 
-        # 🔥 ΔAUC Heatmap Section
+        # ΔAUC Heatmap Section
         if cross_time is not None:
             
 
@@ -504,7 +504,7 @@ if all_data:  # Only run if data has been loaded
                 delta_auc_grid,
                 annot=True,
                 fmt=".0f",
-                cmap="coolwarm",
+                cmap="coolwarm_r",
                 cbar_kws={"label": "ΔAUC"},
                 ax=ax
             )
