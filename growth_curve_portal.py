@@ -563,7 +563,7 @@ if all_data:
                             <div style="
                                 background-color: {colour};
                                 border: {border_style};
-                                border-radius: 3px;
+                                border-radius: 0px;
                                 margin-top: -48px;
                                 height: 24px;
                                 line-height: 24px;
