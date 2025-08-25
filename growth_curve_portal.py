@@ -571,6 +571,9 @@ if all_data:
                         elif not checked and well_id in selected_wells:
                             selected_wells.remove(well_id)
 
+                        # Format delta AUC to ±0.003 format
+                        delta_formatted = f"{delta:+.3f}"
+
                         st.markdown(
                             f"""
                             <div style="
@@ -578,14 +581,15 @@ if all_data:
                                 border: {border_style};
                                 border-radius: 0px;
                                 margin-top: -48px;
-                                height: 24px;
-                                line-height: 24px;
+                                height: 36px;
+                                line-height: 1.2;
                                 text-align: center;
                                 font-size: 11px;
                                 font-weight: bold;
                                 color: black;
+                                padding-top: 2px;
                             ">
-                                {well_id}
+                                {well_id}<br><span style='font-weight: normal'>{delta_formatted}</span>
                             </div>
                             """,
                             unsafe_allow_html=True,
