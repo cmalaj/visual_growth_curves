@@ -502,7 +502,7 @@ if all_data:
         #st.plotly_chart(fig, use_container_width=True, key=f"growth_plot_base_{plate}_{idx}")
 
         # -------------------------
-        # ΔAUC Well Grid Section (Inline HTML)
+        # ΔAUC Well Grid Section (Streamlit-Compatible)
         # -------------------------
         if cross_time is not None:
             valid_mask = time_vals <= cross_time
@@ -523,64 +523,61 @@ if all_data:
 
             delta_auc_grid = delta_auc_grid.apply(pd.to_numeric)
 
-            # Setup colourmap
+            # Set up color normalization and colormap
             norm = mcolors.TwoSlopeNorm(vcenter=0, vmin=delta_auc_grid.min().min(), vmax=delta_auc_grid.max().max())
             cmap = cm.get_cmap("coolwarm_r")
 
             st.subheader(f"{plate} – ΔAUC Well Grid (up to {threshold_to_use}×)")
 
-            # 🧠 Track selected wells in session_state (for later)
-            html_well_key = f"html_selected_wells_{plate}_{idx}"
-            if html_well_key not in st.session_state:
-                st.session_state[html_well_key] = []
+            # Session key for storing selected wells
+            session_key = f"selected_wells_{plate}_{idx}"
+            if session_key not in st.session_state:
+                st.session_state[session_key] = []
 
-            # 🧱 Render compact HTML table with buttons
-            html = "<table style='border-spacing: 1px; line-height: 1.1;'>"
+            selected_wells = st.session_state[session_key]
+
+            # Build grid
             for row in list("ABCDEFGH"):
-                html += "<tr>"
-                for col in range(1, 13):
-                    well_id = f"{row}{col}"
-                    delta = delta_auc_grid.loc[row, str(col)]
+                cols = st.columns(12)
+                for i, col_num in enumerate(range(1, 13)):
+                    well_id = f"{row}{col_num}"
+                    delta = delta_auc_grid.loc[row, str(col_num)]
+
                     if pd.isna(delta):
-                        html += "<td></td>"
+                        cols[i].markdown(" ", unsafe_allow_html=True)
                         continue
+
                     colour = mcolors.to_hex(cmap(norm(delta)))
-                    html += f"""
-                        <td>
-                            <form action="" method="post">
-                                <button name="well_button" value="{well_id}" style="
-                                    background-color: {colour};
-                                    color: black;
-                                    border: 1px solid #333;
-                                    font-size: 11px;
-                                    width: 32px;
-                                    height: 22px;
-                                    padding: 0;
-                                    margin: 0;
-                                    font-weight: bold;
-                                " title="ΔAUC: {delta:.2f}">{well_id}</button>
-                            </form>
-                        </td>
+                    button_label = f"{well_id}"
+
+                    button_html = f"""
+                        <div style="
+                            background-color: {colour};
+                            border: 1px solid #333;
+                            border-radius: 3px;
+                            padding: 0.2rem;
+                            text-align: center;
+                            font-size: 11px;
+                            font-weight: bold;
+                            height: 24px;
+                            line-height: 1.2;
+                        ">
+                            {button_label}
+                        </div>
                     """
-                html += "</tr>"
-            html += "</table>"
 
-            # Render the table
-            st.markdown(html, unsafe_allow_html=True)
+                    # Make it clickable with invisible Streamlit button
+                    if cols[i].button(button_label, key=f"{plate}_{well_id}_{idx}"):
+                        if well_id in selected_wells:
+                            selected_wells.remove(well_id)
+                        else:
+                            selected_wells.append(well_id)
 
-            # Handle interaction
-            if "well_button" in st.session_state:
-                clicked = st.session_state.well_button
-                selected_wells = st.session_state[html_well_key]
-                if clicked in selected_wells:
-                    selected_wells.remove(clicked)
-                else:
-                    selected_wells.append(clicked)
-                st.session_state[html_well_key] = selected_wells
-                del st.session_state["well_button"]  # Reset after handling
+                    # Overlay the coloured div to simulate background colour
+                    cols[i].markdown(button_html, unsafe_allow_html=True)
 
-            # 🎯 Add selected curves to plot
-            for well in st.session_state[html_well_key]:
+            # Plot selected wells
+            for well in selected_wells:
                 if well in df.columns:
                     fig.add_trace(go.Scatter(
                         x=time_vals,
