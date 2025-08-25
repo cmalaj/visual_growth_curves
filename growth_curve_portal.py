@@ -564,7 +564,7 @@ if all_data:
                                 background-color: {colour};
                                 border: {border_style};
                                 border-radius: 3px;
-                                margin-top: -40px;
+                                margin-top: -45px;
                                 height: 24px;
                                 line-height: 24px;
                                 text-align: center;
