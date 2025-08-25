@@ -11,8 +11,8 @@ from matplotlib.colors import LinearSegmentedColormap
 from io import StringIO
 import re
 import copy
-import pkg_resources
-st.write("Installed packages:", [p.project_name for p in pkg_resources.working_set])
+from scipy.integrate import trapz
+import seaborn as sns
 
 st.set_page_config(layout="wide")
 st.title("Growth Curve Visualisation Portal v. 1.0")
@@ -648,8 +648,7 @@ if all_data:  # Only run if data has been loaded
 
         # 🔥 ΔAUC Heatmap Section
         if cross_time is not None:
-            from scipy.integrate import trapz
-            import seaborn as sns
+            
 
             # Restrict to timepoints ≤ cross_time
             valid_mask = time_vals <= cross_time
