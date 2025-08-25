@@ -548,7 +548,7 @@ if all_data:
                     colour = mcolors.to_hex(cmap(norm(delta)))
                     button_key = f"{plate}_{well_id}_{idx}"
                     is_selected = well_id in selected_wells
-                    border_style = "3px solid black" if is_selected else "1px solid #333"
+                    border_style = "3px solid black" if is_selected else "0px solid #333"
 
                     with cols[i]:
                         clicked = st.button(" ", key=button_key, help=well_id)
