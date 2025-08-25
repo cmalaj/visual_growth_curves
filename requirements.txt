@@ -1,4 +1,5 @@
 streamlit
+setuptools
 pandas
 matplotlib
 seaborn
