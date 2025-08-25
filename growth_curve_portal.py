@@ -502,8 +502,7 @@ if all_data:
         #st.plotly_chart(fig, use_container_width=True, key=f"growth_plot_base_{plate}_{idx}")
 
         # -------------------------
-        # ΔAUC Well Grid Section (Streamlit-Compatible)
-        # -------------------------
+        # ΔAUC Well Grid Section
         if cross_time is not None:
             valid_mask = time_vals <= cross_time
             control_auc = np.trapz(mean_vals[valid_mask], time_vals[valid_mask])
@@ -529,54 +528,72 @@ if all_data:
 
             st.subheader(f"{plate} – ΔAUC Well Grid (up to {threshold_to_use}×)")
 
-            # Session key for storing selected wells
+            # Track selected wells in session state
             session_key = f"selected_wells_{plate}_{idx}"
             if session_key not in st.session_state:
                 st.session_state[session_key] = []
 
             selected_wells = st.session_state[session_key]
 
-            # Build grid
+            # Inject CSS for styling
+            st.markdown("""
+            <style>
+            div[data-testid="stVerticalBlock"] > div {
+                margin-bottom: 0rem !important;
+                padding-bottom: 0rem !important;
+            }
+
+            div[data-testid="column"] {
+                padding: 0rem !important;
+                margin: 0rem !important;
+            }
+
+            div[data-testid^="stButton-"] button {
+                padding: 2px 4px !important;
+                font-size: 11px !important;
+                height: 24px !important;
+                width: 100% !important;
+                margin: 0px !important;
+                font-weight: 600;
+                line-height: 1.1 !important;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+
+            # Render buttons in 8×12 grid
             for row in list("ABCDEFGH"):
                 cols = st.columns(12)
-                for i, col_num in enumerate(range(1, 13)):
+                for col_idx, col_num in enumerate(range(1, 13)):
                     well_id = f"{row}{col_num}"
                     delta = delta_auc_grid.loc[row, str(col_num)]
 
                     if pd.isna(delta):
-                        cols[i].markdown(" ", unsafe_allow_html=True)
+                        cols[col_idx].write(" ")
                         continue
 
+                    # Generate colour
                     colour = mcolors.to_hex(cmap(norm(delta)))
-                    button_label = f"{well_id}"
+                    element_id = f"btn_{plate}_{well_id}_{idx}"
 
-                    button_html = f"""
-                        <div style="
-                            background-color: {colour};
-                            border: 1px solid #333;
-                            border-radius: 3px;
-                            padding: 0.2rem;
-                            text-align: center;
-                            font-size: 11px;
-                            font-weight: bold;
-                            height: 24px;
-                            line-height: 1.2;
-                        ">
-                            {button_label}
-                        </div>
-                    """
+                    # Inject inline CSS for this specific button ID
+                    st.markdown(f"""
+                        <style>
+                            div[data-testid="stButton-{element_id}"] button {{
+                                background-color: {colour};
+                                color: black;
+                                border: 1px solid #333;
+                            }}
+                        </style>
+                    """, unsafe_allow_html=True)
 
-                    # Make it clickable with invisible Streamlit button
-                    if cols[i].button(button_label, key=f"{plate}_{well_id}_{idx}"):
+                    # Create coloured button with unique element_id
+                    if cols[col_idx].button(well_id, key=f"{element_id}", help=f"ΔAUC: {delta:.2f}"):
                         if well_id in selected_wells:
                             selected_wells.remove(well_id)
                         else:
                             selected_wells.append(well_id)
 
-                    # Overlay the coloured div to simulate background colour
-                    cols[i].markdown(button_html, unsafe_allow_html=True)
-
-            # Plot selected wells
+            # Plot selected growth curves
             for well in selected_wells:
                 if well in df.columns:
                     fig.add_trace(go.Scatter(
