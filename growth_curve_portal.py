@@ -563,8 +563,9 @@ if all_data:
                                 background-color: {colour};
                                 color: black;
                                 border: 1px solid #999;
-                                height: 36px;
-                                font-weight: bold;
+                                height: 24px;
+                                font-size: 12px;
+                                padding: 2px 4px;
                             }}
                         </style>
                     """
