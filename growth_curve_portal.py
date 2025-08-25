@@ -541,10 +541,10 @@ if all_data:
             st.markdown("""
                 <style>
                     div[data-testid="column"] {
-                        padding: 0.1rem;
+                        padding: 0.rem;
                     }
                     div[data-testid="stButton"] button {
-                        padding: 2px 4px;
+                        padding: 1px 1px;
                         font-size: 12px;
                         height: 24px;
                         width: 100%;
