@@ -534,6 +534,19 @@ if all_data:
 
             selected_wells = st.session_state[session_key]
 
+            # Optional CSS to reduce vertical spacing
+            st.markdown("""
+            <style>
+            div[data-testid="stCheckbox"] {
+                margin-bottom: 0px;
+            }
+            div[data-testid="stCheckbox"] label {
+                height: 0px;
+                padding: 0px;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+
             # Grid rendering
             for row in list("ABCDEFGH"):
                 cols = st.columns(12, gap="small")
@@ -546,32 +559,17 @@ if all_data:
                         continue
 
                     colour = mcolors.to_hex(cmap(norm(delta)))
-                    button_key = f"{plate}_{well_id}_{idx}"
                     is_selected = well_id in selected_wells
                     border_style = "3px solid black" if is_selected else "0px solid #333"
+                    checkbox_key = f"cb_{plate}_{well_id}_{idx}"
 
                     with cols[i]:
-                        button_html = f"""
-                            <style>
-                            div[data-testid="stButton"] > button {{
-                                width: 100%;
-                                height: 24px;
-                                padding: 0;
-                                margin: 0;
-                                border: none;
-                                background-color: transparent;
-                                box-shadow: none;
-                            }}
-                            </style>
-                        """
-                        cols[i].markdown(button_html, unsafe_allow_html=True)
-                        clicked = cols[i].button(" ", key=button_key, help=well_id)
-                        if clicked:
-                            if is_selected:
-                                selected_wells.remove(well_id)
-                            else:
-                                selected_wells.append(well_id)
-                            st.rerun()
+                        checked = st.checkbox(" ", key=checkbox_key, value=is_selected, help=well_id, label_visibility="collapsed")
+                        
+                        if checked and well_id not in selected_wells:
+                            selected_wells.append(well_id)
+                        elif not checked and well_id in selected_wells:
+                            selected_wells.remove(well_id)
 
                         st.markdown(
                             f"""
