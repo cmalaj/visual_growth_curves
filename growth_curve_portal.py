@@ -12,8 +12,6 @@ from io import StringIO
 import re
 import copy
 import scipy
-st.write("scipy version:", scipy.__version__)
-from scipy.integrate import trapz
 import seaborn as sns
 
 st.set_page_config(layout="wide")
@@ -654,7 +652,7 @@ if all_data:  # Only run if data has been loaded
 
             # Restrict to timepoints ≤ cross_time
             valid_mask = time_vals <= cross_time
-            control_auc = trapz(mean_vals[valid_mask], time_vals[valid_mask])
+            control_auc = np.trapz(mean_vals[valid_mask], time_vals[valid_mask])
 
             delta_auc_grid = pd.DataFrame(index=list("ABCDEFGH"), columns=[str(i) for i in range(1, 13)])
 
@@ -663,7 +661,7 @@ if all_data:  # Only run if data has been loaded
                 if well not in df.columns or row not in delta_auc_grid.index or col not in delta_auc_grid.columns:
                     continue
                 curve = df[well]
-                well_auc = trapz(curve[valid_mask], time_vals[valid_mask])
+                well_auc = np.trapz(curve[valid_mask], time_vals[valid_mask])
                 delta_auc = well_auc - control_auc
                 delta_auc_grid.loc[row, col] = delta_auc
 
