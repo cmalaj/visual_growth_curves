@@ -541,14 +541,18 @@ if all_data:
             st.markdown("""
                 <style>
                     div[data-testid="column"] {
-                        padding: 0.rem;
+                        padding: 0.1rem;
                     }
                     div[data-testid="stButton"] button {
-                        padding: 0px 0px;
+                        padding: 2px 4px;
                         font-size: 12px;
-                        height: 4px;
+                        height: 24px;
                         width: 100%;
                         font-weight: bold;
+                    }
+                    /* 👇 NEW: reduce vertical gap between st.columns blocks */
+                    section.main > div > div > div > div {
+                        gap: 0.1rem !important;
                     }
                 </style>
             """, unsafe_allow_html=True)
