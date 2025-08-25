@@ -11,6 +11,8 @@ from matplotlib.colors import LinearSegmentedColormap
 from io import StringIO
 import re
 import copy
+import pkg_resources
+st.write("Installed packages:", [p.project_name for p in pkg_resources.working_set])
 
 st.set_page_config(layout="wide")
 st.title("Growth Curve Visualisation Portal v. 1.0")
