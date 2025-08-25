@@ -544,7 +544,7 @@ if all_data:
                         padding: 0.rem;
                     }
                     div[data-testid="stButton"] button {
-                        padding: 1px 1px;
+                        padding: 0px 0px;
                         font-size: 12px;
                         height: 4px;
                         width: 100%;
