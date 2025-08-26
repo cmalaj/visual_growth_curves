@@ -439,6 +439,7 @@ if all_data:
         mean_vals = df[selected_positions].mean(axis=1)
         baseline = mean_vals.iloc[0]
         time_vals = df.index
+        time_vals = df.index / 60  # Convert minutes to hours
 
         st.subheader(f"{plate} – Select Growth Threshold for AUC Integration")
         threshold_to_use = st.selectbox(
@@ -524,7 +525,7 @@ if all_data:
         # --- Final layout ---
         fig.update_layout(
             title=f"{st.session_state['plate_titles'].get(plate, plate)} – Growth Curves",
-            xaxis_title="Time (minutes)",
+            xaxis_title="Time (hours)",
             yaxis_title="OD600",
             yaxis=dict(range=[0, mean_vals.max() * 1.1]),
             margin=dict(l=50, r=50, t=50, b=50),
