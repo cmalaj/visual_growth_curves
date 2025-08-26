@@ -539,7 +539,7 @@ if all_data:
             <style>
             div[data-testid="stCheckbox"] {
                 margin-bottom: 0px;
-                margin-top: 8px;  /* <-- This nudges the checkbox lower */
+                margin-top: 4px;  /* <-- This nudges the checkbox lower */
                 display: flex;
                 align-items: flex-start;
                 justify-content: center;
