@@ -567,7 +567,7 @@ if all_data:
                     checkbox_key = f"cb_{plate}_{well_id}_{idx}"
 
                     with cols[i]:
-                        checked = st.checkbox(" ", key=checkbox_key, value=is_selected, help=well_id, label_visibility="collapsed")
+                        checked = st.checkbox(" ", key=checkbox_key, value=is_selected, help=well_id, label_visibility="hidden")
                         
                         if checked and well_id not in selected_wells:
                             selected_wells.append(well_id)
