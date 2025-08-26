@@ -455,13 +455,42 @@ if all_data:
 
         # Interactive Curve Plot
         fig = go.Figure()
+
+        # --- Add mean control curve ---
         fig.add_trace(go.Scatter(
             x=time_vals,
             y=mean_vals,
             name="Mean Control Growth",
-            line=dict(color="blue", width=3)
+            line=dict(color="blue", width=3),
         ))
 
+        # --- Compute ±1 SD CI ribbon ---
+        std_vals = df[selected_positions].std(axis=1)
+        upper_bound = mean_vals + std_vals
+        lower_bound = mean_vals - std_vals
+
+        # Add lower bound first
+        fig.add_trace(go.Scatter(
+            x=time_vals,
+            y=lower_bound,
+            line=dict(color="rgba(0,0,255,0)"),
+            showlegend=False,
+            hoverinfo='skip',
+            name="CI lower",
+        ))
+
+        # Add upper bound and fill between curves
+        fig.add_trace(go.Scatter(
+            x=time_vals,
+            y=upper_bound,
+            fill='tonexty',
+            fillcolor='rgba(0,0,255,0.2)',  # Semi-transparent blue
+            line=dict(color="rgba(0,0,255,0)"),
+            name="±1 SD",
+            hoverinfo='skip',
+        ))
+
+        # --- Add threshold line and marker ---
         if cross_time is not None:
             fig.add_shape(
                 type="line",
@@ -478,10 +507,11 @@ if all_data:
                 showlegend=False
             ))
 
-        # Plot additional selected well curves
+        # --- Add individual selected well curves ---
         well_key = f"selected_wells_{plate}"
         selected_wells = st.session_state.get(well_key, set())
         color_cycle = plt.cm.tab10.colors
+
         for i, well in enumerate(selected_wells):
             if well in df.columns:
                 fig.add_trace(go.Scatter(
@@ -491,6 +521,7 @@ if all_data:
                     line=dict(color=f"rgba{color_cycle[i % 10]}", width=2)
                 ))
 
+        # --- Final layout ---
         fig.update_layout(
             title=f"{st.session_state['plate_titles'].get(plate, plate)} – Growth Curves",
             xaxis_title="Time (minutes)",
