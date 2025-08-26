@@ -416,7 +416,7 @@ if all_data:
     st.markdown("---")
     st.header("Growth Threshold Analysis")
 
-    thresholds = [1000, 2000, 5000, 7500]
+    thresholds = [1000, 100, 250, 500, 2000, 3000, 5000, 7500, 10000]
 
     for idx, df in enumerate(all_data_scaled):
         plate = df["Plate"].iloc[0]
